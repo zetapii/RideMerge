@@ -1,0 +1,1 @@
+'''This will also store the speed of the vehicle maybe in ridemetadata'''

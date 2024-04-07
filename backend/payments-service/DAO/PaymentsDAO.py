@@ -1,0 +1,1 @@
+'''Accessing the Payment Object in the Database'''

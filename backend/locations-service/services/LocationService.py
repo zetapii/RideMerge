@@ -1,0 +1,2 @@
+'''This will return the Driver's updated location , when the driver is on a ride.'''
+'''How? This can be done by fetching from gps but for simulating what we can do is we can use the speed of the driver and the time he started the ride to calculate the distance he has travelled and then update the location accordingly.'''

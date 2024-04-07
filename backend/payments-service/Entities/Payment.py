@@ -1,0 +1,1 @@
+'''This will store the payment object that will be saved in the Database.'''
