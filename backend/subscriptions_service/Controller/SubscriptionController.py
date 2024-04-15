@@ -58,7 +58,6 @@ class SubscriptionController(object):
     def __add_subscription(self): 
         if request.method == 'GET':
             try:
-                
                 body = request.form 
                 
                 benefit = self.__benefitfactory.convertToObject(body)
@@ -101,9 +100,7 @@ class SubscriptionController(object):
         if request.method == 'GET':
             try: 
               userid = request.form.get("userid") 
-              
               benefit_id = self.__subdao.remove(userid = userid)  
-              
               self.__benefitdao.remove(mongo_id = benefit_id)
               
               res = {
@@ -130,6 +127,8 @@ class SubscriptionController(object):
                 status = 405, 
                 mimetype = 'application/json'
             ) 
+    
+    
     
     def runApp(self, port : int):
         self.__app.run(debug = True) 

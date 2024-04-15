@@ -5,6 +5,7 @@ from backend.subscriptions_service.Entities.JSONFactory.Implementation.SubPlanJS
 
 from pymongo.mongo_client import MongoClient
 
+from bson.objectid import ObjectId
 
 
 class SubscriptionDAO(SubsBenefitDAOInterface):
@@ -69,7 +70,7 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
              mongo_id = None):
 
         found = self.__benefits.find_one({
-            '_id' : mongo_id,
+            '_id' : ObjectId(mongo_id),
         })
 
         if found == None:

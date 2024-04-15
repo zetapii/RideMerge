@@ -20,10 +20,10 @@ class BenefitJSONFactory(JSONFactoryInterface):
     def convertToObject(self,
                          json : dict):
         try:
-            surge  = json.get('apply_surge', type = bool)
+            surge  = eval(json.get('apply_surge'))
             disc   = json.get('discount_rate',type = float)
-            safe   = json.get('safe_ride', type = bool)
-            premium= json.get('premium_vehicle',type = bool)
+            safe   = eval(json.get('safe_ride'))
+            premium= eval(json.get('premium_vehicle'))
 
             benefit = Benefit(
                 

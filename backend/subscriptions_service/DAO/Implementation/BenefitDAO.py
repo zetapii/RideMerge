@@ -66,7 +66,7 @@ class BenefitDAO(SubsBenefitDAOInterface):
              mongo_id = None):
 
         found = self.__benefits.find_one({
-            '_id' : mongo_id,
+            '_id' : ObjectId(mongo_id),
         })
 
         if found == None:
