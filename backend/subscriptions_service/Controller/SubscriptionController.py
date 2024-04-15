@@ -1,12 +1,12 @@
 from pymongo.mongo_client import MongoClient
 
-from backend.subscriptions_service.DAO.Implementation.BenefitDAO import BenefitDAO
+from backend.subscriptions_service.DAO.Implementation.BenefitDAO      import BenefitDAO
 from backend.subscriptions_service.DAO.Implementation.SubscriptionDAO import SubscriptionDAO
 
 from backend.subscriptions_service.Entities.JSONFactory.Implementation.BenefitJSONFactory import BenefitJSONFactory
 from backend.subscriptions_service.Entities.JSONFactory.Implementation.SubPlanJSONFactory import SubPlanJSONFactory
 
-from backend.subscriptions_service.Entities.Benefit import Benefit
+from backend.subscriptions_service.Entities.Benefit          import Benefit
 from backend.subscriptions_service.Entities.SubscriptionPlan import SubscriptionPlan
 
 
@@ -25,20 +25,11 @@ class SubscriptionController(object):
     def __init__(self,
                  mongo_client : MongoClient): 
         
-        self.__benefitdao = BenefitDAO(
-            mongo_client = mongo_client
-        )
-        self.__subdao     = SubscriptionDAO(
-            mongo_client = mongo_client
-        )
+        self.__benefitdao = BenefitDAO(mongo_client = mongo_client)
+        self.__subdao     = SubscriptionDAO(mongo_client = mongo_client)
         
-        self.__benefitfactory = BenefitJSONFactory(
-            
-        )
-        
-        self.__subscriptionfactory = SubPlanJSONFactory(
-            
-        )
+        self.__benefitfactory = BenefitJSONFactory()
+        self.__subscriptionfactory = SubPlanJSONFactory()
         
         self.__app = Flask(
             import_name = __name__
@@ -53,6 +44,14 @@ class SubscriptionController(object):
             rule = '/delete',
             view_func = self.__remove_subscription,
         )
+        
+        self.__app.add_url_rule(
+            rule = '/find_subscription',
+            view_func = self.__find_subscription,
+        )
+    
+    def runApp(self, port : int):
+        self.__app.run(debug = True)
          
     
     def __add_subscription(self): 
@@ -127,11 +126,43 @@ class SubscriptionController(object):
                 status = 405, 
                 mimetype = 'application/json'
             ) 
-    
-    
-    
-    def runApp(self, port : int):
-        self.__app.run(debug = True) 
+     
+     
+    def __find_subscription(self):
+        if request.method == 'GET':
+            try: 
+                userid = request.form.get("userid") 
+                
+                subscription = self.__subdao.find(userid = userid)
+                
+                json_sub = self.__subscriptionfactory.convertToJSON(subscription)
+                
+                res = {
+                    'message' : 'OK',
+                    'subscription_details' : json_sub,
+                }
+                
+                return self.__app.response_class(
+                    response = json.dumps(res),
+                    status = 200,
+                    mimetype = 'application/json'
+                )
+                
+            except Exception as e: 
+                print(e) 
+                res = {
+                    'message' : 'Bad Request',
+                }
+                return self.__app.response_class(
+                    status = 400, 
+                    mimetype = 'application/json' 
+                )
+            
+        else:
+            return self.__app.response_class(
+                status = 405, 
+                mimetype = 'application/json'
+            )
     
     
     

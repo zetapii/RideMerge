@@ -1,5 +1,5 @@
 
-class SubscriptionPlan:
+class SubscriptionPlan(object):
     def __init__(self, 
                  userid : str, 
                  price : float, 

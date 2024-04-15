@@ -1,6 +1,6 @@
 
 
-class Benefit : 
+class Benefit(object): 
     def __init__(self, 
                  apply_surge : bool, 
                  discount_rate : float,
