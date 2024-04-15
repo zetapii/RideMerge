@@ -36,14 +36,23 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
 
     def remove(self,
                mongo_id = None,
-               id = None):
+               userid = None):
 
-        self.__benefits.delete_one(filter={
-            '_id' : mongo_id,
-            'id' : id,
+        delete_target = self.__benefits.find_one({
+            'userid' : userid,
         })
+        
+        if delete_target == None:
+            return None 
+        
+        id = str(delete_target.get('benefit_id')) 
+        
+        self.__benefits.delete_one({
+            'userid' : userid,
+        })
+        
+        return id
 
-        return
 
     def update(self):
 

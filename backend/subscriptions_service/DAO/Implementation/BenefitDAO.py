@@ -7,7 +7,7 @@ from backend.subscriptions_service.Entities.JSONFactory.Implementation.BenefitJS
 
 
 from pymongo.mongo_client import MongoClient
-
+from bson.objectid import ObjectId
 
 
 class BenefitDAO(SubsBenefitDAOInterface):
@@ -45,10 +45,9 @@ class BenefitDAO(SubsBenefitDAOInterface):
     def remove(self,
                mongo_id = None,
                id = None):
-
-        self.__benefits.delete_one(filter={
-            '_id' : mongo_id,
-            'id' : id,
+        
+        self.__benefits.delete_one({
+            '_id' : ObjectId(mongo_id),
         })
 
         return

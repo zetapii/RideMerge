@@ -49,6 +49,11 @@ class SubscriptionController(object):
             view_func = self.__add_subscription,
         )
         
+        self.__app.add_url_rule(
+            rule = '/delete',
+            view_func = self.__remove_subscription,
+        )
+         
     
     def __add_subscription(self): 
         if request.method == 'GET':
@@ -66,6 +71,7 @@ class SubscriptionController(object):
                 subscription_id = self.__subdao.add(subscription)
 
                 res = {
+                    'message' : 'OK',
                     'subscription_id' : str(subscription_id),
                 }
             
@@ -77,15 +83,53 @@ class SubscriptionController(object):
             
             except Exception as e:
                 print(e) 
+                res = {
+                    'message' : 'Bad Request',
+                }
                 return self.__app.response_class(
                     status = 400, 
                     mimetype = 'application/json' 
                 )
         else:
-            return 
+            return self.__app.response_class(
+                status = 405, 
+                mimetype = 'application/json'
+            )
     
     
-    
+    def __remove_subscription(self):
+        if request.method == 'GET':
+            try: 
+              userid = request.form.get("userid") 
+              
+              benefit_id = self.__subdao.remove(userid = userid)  
+              
+              self.__benefitdao.remove(mongo_id = benefit_id)
+              
+              res = {
+                  'message' : 'OK',
+                  'deleted' : 'yes',
+              } 
+              
+              return self.__app.response_class(
+                  response = json.dumps(res),
+                  status = 200, 
+                  mimetype = 'application/json'
+              )
+            except Exception as e: 
+                print(e) 
+                res = {
+                    'message' : 'Bad Request',
+                }
+                return self.__app.response_class(
+                    status = 400, 
+                    mimetype = 'application/json' 
+                )
+        else: 
+            return self.__app.response_class(
+                status = 405, 
+                mimetype = 'application/json'
+            ) 
     
     def runApp(self, port : int):
         self.__app.run(debug = True) 
