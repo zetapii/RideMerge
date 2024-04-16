@@ -1,13 +1,32 @@
 '''This will also store the speed of the vehicle maybe in ridemetadata'''
+from enum import Enum 
+
+import sys
+# sys.path.append('../../services') 
 
 
-class RideMetadata :
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, Integer,Float, String, ForeignKey,Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship 
+import base 
 
-    ##Ride Metadata is created once the ride is accepted by the driver and otp is sent
-    def __init__(self, id , ride_id , src_loc , ride_otp , status, vehicle_id):
-        self.id = id
-        self.ride_id = ride_id
-        self.ride_otp = ride_otp
-        self.status = status 
-        self.ride_rating = None
-        self.vehicle_id = vehicle_id
+Base = base.Base 
+class RideStatus(Enum):
+    PENDING = 1     # NO DRIVER HAS ACCEPTED THE RIDE
+    ACCEPTED = 2    # DRIVER HAS ACCEPTED THE RIDE
+    PASSENGER_PICKED = 3    # PASSANGER HAS BEEN PICKED 
+    DRIVER_CANCELLED = 4  # RIDE HAS BEEN CANCELLED BY DRIVER
+    PASSENGER_CANCELLED = 5   # RIDE HAS BEEN CANCELLED BY RIDER
+    COMPLETED = 6   # RIDE HAS BEEN COMPLETED
+
+class RideMetadata(Base) :
+    __tablename__ = 'RideMetadata'
+    id = Column(String, primary_key=True)
+    ride_id = Column(String)
+    ride_otp = Column(String)
+    ride_status = Column(Integer)
+    ride_rating = Column(Integer)
+    vehicle_id = Column(String)
+    vehicle_model = Column(String)
+    is_secure = Column(Boolean)
