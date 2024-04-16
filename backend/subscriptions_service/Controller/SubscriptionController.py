@@ -131,11 +131,11 @@ class SubscriptionController(object):
             try: 
               userid = request.form.get("userid") 
               benefit_id = self.__subdao.remove(userid = userid)  
-              self.__benefitdao.remove(mongo_id = benefit_id)
+              deleted = self.__benefitdao.remove(mongo_id = benefit_id)
               
               return self.sendResponse({
                   'message' : 'OK',
-                  'deleted' : 'yes',
+                  'deleted' : deleted,
               })
             except Exception as e: 
                 return self.badRequest(e) 
@@ -187,7 +187,6 @@ class SubscriptionController(object):
                 
                 benefit = self.__benefitdao.find(mongo_id = benefit_id)  
                 
-                
                 json_benefit = self.__benefitfactory.convertToJSON(benefit) 
                 
                 return self.sendResponse({
@@ -226,9 +225,11 @@ class SubscriptionController(object):
         if request.method == 'GET':
             try: 
                 userid = request.form.get("userid") 
-                
+                new_duration = request.form.get("new_duration")
+                    
                 transaction = self.__subdao.update(userid = userid, 
-                                     new_start_date = date.today().strftime("%Y-%m-%d %H:%M:%S"))
+                                     new_start_date = date.today().strftime("%Y-%m-%d %H:%M:%S"),
+                                     new_duration = new_duration)
                 
                 return self.sendResponse({
                     'message' : 'OK',
@@ -239,3 +240,5 @@ class SubscriptionController(object):
                 return self.badRequest(e) 
         else: 
            return self.generateIncorrectRequest()
+    
+    

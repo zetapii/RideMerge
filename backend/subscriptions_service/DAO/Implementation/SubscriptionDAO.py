@@ -57,11 +57,15 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
 
     def update(self,
                userid : str,
-               new_start_date = None):
+               new_start_date = None,
+               new_duration = None):
         update = dict()
         
         if new_start_date is not None: 
             update['start_date'] = new_start_date
+        
+        if new_duration is not None:
+            update['duration'] = new_duration
         
         update =  {"$set": update}
         try:

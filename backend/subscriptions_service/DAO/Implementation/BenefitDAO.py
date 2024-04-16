@@ -45,12 +45,15 @@ class BenefitDAO(SubsBenefitDAOInterface):
     def remove(self,
                mongo_id = None,
                id = None):
-        
-        self.__benefits.delete_one({
+        try:
+            self.__benefits.delete_one({
             '_id' : ObjectId(mongo_id),
-        })
+            })
+            return True 
 
-        return
+        except Exception as e:
+            print(e)
+            return False
 
     def update(self):
 
