@@ -231,11 +231,22 @@ class SubscriptionController(object):
                                      new_start_date = date.today().strftime("%Y-%m-%d %H:%M:%S"),
                                      new_duration = new_duration)
                 
+                if transaction['updated'] == False:
+                    return self.sendResponse({
+                        'message' : 'OK',
+                        'renewed' : False,
+                        })
+                
+                transaction2 = self.__benefitdao.update(mongo_id = transaction['benefit'],
+                                                        apply_surge = request.form.get("apply_surge"),
+                                                        discount_rate = request.form.get("discount_rate"),
+                                                        premium_vehicle = request.form.get("premium_vehicle"),
+                                                        safe_ride = request.form.get("safe_ride")) 
+                
                 return self.sendResponse({
                     'message' : 'OK',
-                    'renewed' : transaction,
+                    'renewed' : transaction2,
                 })
-                
             except Exception as e: 
                 return self.badRequest(e) 
         else: 

@@ -69,14 +69,21 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
         
         update =  {"$set": update}
         try:
+            found = self.__benefits.find_one({'userid' : userid})['benefit_id'] 
             self.__benefits.find_one_and_update({
                 'userid' : userid
             }, update)
-            return True
+            return {
+                'updated' : True,
+                'benefit' : found
+            }
         
         except Exception as e:
             print(e)
-            return False
+            return {
+                'updated' : False,
+                
+            }
         
 
 
