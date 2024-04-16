@@ -62,6 +62,38 @@ class SubscriptionController(object):
     
     def runApp(self, port : int):
         self.__app.run(debug = True)
+    
+    # 405 
+    def generateIncorrectRequest(self):
+        res = {
+            'message' : 'Request not allowed, use GET only' 
+        }
+        return self.__app.response_class(
+            response = json.dumps(res),
+            status = 405, 
+            mimetype = 'application/json',
+        )
+    
+    # 400
+    def badRequest(self, e):
+        print(e) 
+        res = {
+            'message' : 'Bad Request',
+        }
+        
+        return self.__app.response_class(
+            response = json.dumps(res),
+            status = 400, 
+            mimetype = 'application/json',
+        )
+    
+    # 200 
+    def sendResponse(self, response):
+        return self.__app.response_class(
+            response = json.dumps(response),
+            status = 200, 
+            mimetype = 'application/json',
+        )
          
     
     def __add_subscription(self): 
@@ -77,32 +109,16 @@ class SubscriptionController(object):
                 body['benefit_id'] = str(benefit_id)
                 subscription = self.__subscriptionfactory.convertToObject(body) 
                 subscription_id = self.__subdao.add(subscription)
-
-                res = {
+            
+                return self.sendResponse({
                     'message' : 'OK',
                     'subscription_id' : str(subscription_id),
-                }
-            
-                return self.__app.response_class(
-                    response = json.dumps(res),
-                    status = 200, 
-                    mimetype = 'application/json'
-                )
+                })
             
             except Exception as e:
-                print(e) 
-                res = {
-                    'message' : 'Bad Request',
-                }
-                return self.__app.response_class(
-                    status = 400, 
-                    mimetype = 'application/json' 
-                )
+                return self.badRequest(e) 
         else:
-            return self.__app.response_class(
-                status = 405, 
-                mimetype = 'application/json'
-            )
+            return self.generateIncorrectRequest()
     
     
     def __remove_subscription(self):
@@ -112,30 +128,14 @@ class SubscriptionController(object):
               benefit_id = self.__subdao.remove(userid = userid)  
               self.__benefitdao.remove(mongo_id = benefit_id)
               
-              res = {
+              return self.sendResponse({
                   'message' : 'OK',
                   'deleted' : 'yes',
-              } 
-              
-              return self.__app.response_class(
-                  response = json.dumps(res),
-                  status = 200, 
-                  mimetype = 'application/json'
-              )
+              })
             except Exception as e: 
-                print(e) 
-                res = {
-                    'message' : 'Bad Request',
-                }
-                return self.__app.response_class(
-                    status = 400, 
-                    mimetype = 'application/json' 
-                )
+                return self.badRequest(e) 
         else: 
-            return self.__app.response_class(
-                status = 405, 
-                mimetype = 'application/json'
-            ) 
+            return self.generateIncorrectRequest()
      
      
     def __find_subscription(self):
@@ -145,34 +145,23 @@ class SubscriptionController(object):
                 
                 subscription = self.__subdao.find(userid = userid)
                 
-                json_sub = self.__subscriptionfactory.convertToJSON(subscription)
+                if subscription == None: 
+                    return self.sendResponse({
+                        'message' : 'Not Found',
+                    })
                 
-                res = {
+                json_sub = self.__subscriptionfactory.convertToJSON(subscription) 
+                
+                return self.sendResponse({
                     'message' : 'OK',
                     'subscription_details' : json_sub,
-                }
-                
-                return self.__app.response_class(
-                    response = json.dumps(res),
-                    status = 200,
-                    mimetype = 'application/json'
-                )
+                })
                 
             except Exception as e: 
-                print(e) 
-                res = {
-                    'message' : 'Bad Request',
-                }
-                return self.__app.response_class(
-                    status = 400, 
-                    mimetype = 'application/json' 
-                )
+                return self.badRequest(e) 
             
         else:
-            return self.__app.response_class(
-                status = 405, 
-                mimetype = 'application/json'
-            )
+            return self.generateIncorrectRequest()
     
     def __find_subscription_benefits(self):
         if request.method == 'GET':
@@ -181,25 +170,14 @@ class SubscriptionController(object):
                 subscription = self.__subdao.find(userid = userid)
                 
                 if subscription == None: 
-                    res = {
+                    return self.sendResponse({
                         'message' : 'Not Found',
-                    }
-                    
-                    return self.__app.response_class(
-                        response = json.dumps(res),
-                        status = 200, 
-                        mimetype = 'application/json'
-                    )
+                    })
                 if subscription.checkExpired() == True: 
-                    res = {
+                    return self.sendResponse({
                         'message' : 'expired',
-                    }
+                    })
                     
-                    return self.__app.response_class(
-                        response = json.dumps(res),
-                        status = 200, 
-                        mimetype = 'application/json'
-                    )
                 benefit_id = subscription.getBenefit() 
                 
                 benefit = self.__benefitdao.find(mongo_id = benefit_id)  
@@ -207,32 +185,16 @@ class SubscriptionController(object):
                 
                 json_benefit = self.__benefitfactory.convertToJSON(benefit) 
                 
-                res = {
+                return self.sendResponse({
                     'message' : 'OK',
                     'benefit_details' : json_benefit,
-                }
-                
-                return self.__app.response_class(
-                    response = json.dumps(res),
-                    status = 200,
-                    mimetype = 'application/json'
-                )
+                })
                 
             except Exception as e: 
-                print(e) 
-                res = {
-                    'message' : 'Bad Request',
-                }
-                return self.__app.response_class(
-                    status = 400, 
-                    mimetype = 'application/json' 
-                )
+                return self.badRequest(e) 
             
         else:
-            return self.__app.response_class(
-                status = 405, 
-                mimetype = 'application/json'
-            )
+            return self.generateIncorrectRequest()
     
     def __check_if_subscription_expired(self):
         if request.method == 'GET':
@@ -240,36 +202,17 @@ class SubscriptionController(object):
                 userid = request.form.get("userid") 
                 subscription = self.__subdao.find(userid = userid)
                 
+                if subscription == None: 
+                    return self.sendResponse({
+                        'message' : 'Not Found',
+                    })
                 isExpired = subscription.checkExpired() 
                 
-                print(isExpired) 
-                
-                res = {
+                return self.sendResponse({
                     'message' : 'OK',
                     'isExpired' : isExpired,
-                }
-                
-                return self.__app.response_class(
-                    response = json.dumps(res),
-                    status = 200, 
-                    mimetype = 'application/json',
-                )
+                })
             except Exception as e: 
-                print(e) 
-                res = {
-                    'message' : 'Bad Request',
-                }
-                return self.__app.response_class(
-                    status = 400, 
-                    mimetype = 'application/json' 
-                )
+                return self.badRequest(e) 
         else: 
-           return self.__app.response_class(
-                status = 405, 
-                mimetype = 'application/json'
-            ) 
-    
-    
-    
-    
-        
+           return self.generateIncorrectRequest()
