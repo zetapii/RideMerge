@@ -226,10 +226,11 @@ class SubscriptionController(object):
             try: 
                 userid = request.form.get("userid") 
                 new_duration = request.form.get("new_duration")
+                new_price = request.form.get("new_price")
                     
                 transaction = self.__subdao.update(userid = userid, 
-                                     new_start_date = date.today().strftime("%Y-%m-%d %H:%M:%S"),
-                                     new_duration = new_duration)
+                                     new_duration = new_duration,
+                                     new_price = new_price)
                 
                 if transaction['updated'] == False:
                     return self.sendResponse({

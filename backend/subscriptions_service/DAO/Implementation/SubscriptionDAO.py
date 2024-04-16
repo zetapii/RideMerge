@@ -5,6 +5,7 @@ from backend.subscriptions_service.Entities.JSONFactory.Implementation.SubPlanJS
 
 from pymongo.mongo_client import MongoClient
 
+from datetime import date
 from bson.objectid import ObjectId
 
 
@@ -57,15 +58,18 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
 
     def update(self,
                userid : str,
-               new_start_date = None,
-               new_duration = None):
+               new_duration = None,
+               new_price = None, ):
         update = dict()
         
-        if new_start_date is not None: 
-            update['start_date'] = new_start_date
+        update['start_date'] = date.today().strftime("%Y-%m-%d %H:%M:%S")
         
         if new_duration is not None:
-            update['duration'] = new_duration
+            update['duration'] = int(new_duration)
+        
+        if new_price is not None:
+            update['price'] = float(new_price)
+         
         
         update =  {"$set": update}
         try:
