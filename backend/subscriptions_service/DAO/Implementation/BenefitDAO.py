@@ -63,12 +63,17 @@ class BenefitDAO(SubsBenefitDAOInterface):
         return
 
     def find(self,
+             userid = None,
              mongo_id = None):
 
-        found = self.__benefits.find_one({
-            '_id' : ObjectId(mongo_id),
-        })
-
+        filter = dict()
+        if userid is not None:
+            filter['userid'] = userid 
+        
+        if mongo_id is not None:
+            filter['_id'] = ObjectId(mongo_id) 
+        
+        found = self.__benefits.find_one(filter)
         if found == None:
             return found
 

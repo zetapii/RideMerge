@@ -49,6 +49,11 @@ class SubscriptionController(object):
             rule = '/find_subscription',
             view_func = self.__find_subscription,
         )
+        
+        self.__app.add_url_rule(
+            rule = '/find_subscription_details',
+            view_func = self.__find_subscription_benefits,
+        )
     
     def runApp(self, port : int):
         self.__app.run(debug = True)
@@ -140,6 +145,47 @@ class SubscriptionController(object):
                 res = {
                     'message' : 'OK',
                     'subscription_details' : json_sub,
+                }
+                
+                return self.__app.response_class(
+                    response = json.dumps(res),
+                    status = 200,
+                    mimetype = 'application/json'
+                )
+                
+            except Exception as e: 
+                print(e) 
+                res = {
+                    'message' : 'Bad Request',
+                }
+                return self.__app.response_class(
+                    status = 400, 
+                    mimetype = 'application/json' 
+                )
+            
+        else:
+            return self.__app.response_class(
+                status = 405, 
+                mimetype = 'application/json'
+            )
+    
+    def __find_subscription_benefits(self):
+        if request.method == 'GET':
+            try: 
+                userid = request.form.get("userid") 
+                subscription = self.__subdao.find(userid = userid)
+                
+                benefit_id = subscription.getBenefit() 
+                
+                print(benefit_id) 
+                benefit = self.__benefitdao.find(mongo_id = benefit_id)  
+                
+                
+                json_benefit = self.__benefitfactory.convertToJSON(benefit) 
+                
+                res = {
+                    'message' : 'OK',
+                    'benefit_details' : json_benefit,
                 }
                 
                 return self.__app.response_class(
