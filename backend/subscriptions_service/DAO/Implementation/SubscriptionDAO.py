@@ -55,15 +55,25 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
         return id
 
 
-    def update(self):
-
-        self.__benefits.find_one_and_update({
-
-        }, {
-
-        })
-
-        return
+    def update(self,
+               userid : str,
+               new_start_date = None):
+        update = dict()
+        
+        if new_start_date is not None: 
+            update['start_date'] = new_start_date
+        
+        update =  {"$set": update}
+        try:
+            self.__benefits.find_one_and_update({
+                'userid' : userid
+            }, update)
+            return True
+        
+        except Exception as e:
+            print(e)
+            return False
+        
 
 
     def find(self,

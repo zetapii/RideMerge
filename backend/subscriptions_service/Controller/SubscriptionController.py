@@ -9,7 +9,7 @@ from backend.subscriptions_service.Entities.JSONFactory.Implementation.SubPlanJS
 from backend.subscriptions_service.Entities.Benefit          import Benefit
 from backend.subscriptions_service.Entities.SubscriptionPlan import SubscriptionPlan
 
-
+from datetime import date 
 from flask import Flask , request, json 
 
 
@@ -58,6 +58,11 @@ class SubscriptionController(object):
         self.__app.add_url_rule(
             rule = '/check_expiry',
             view_func = self.__check_if_subscription_expired,
+        )
+        
+        self.__app.add_url_rule(
+            rule = '/renew_subscription',
+            view_func = self.__renew_subscription,
         )
     
     def runApp(self, port : int):
@@ -212,6 +217,24 @@ class SubscriptionController(object):
                     'message' : 'OK',
                     'isExpired' : isExpired,
                 })
+            except Exception as e: 
+                return self.badRequest(e) 
+        else: 
+           return self.generateIncorrectRequest()
+    
+    def __renew_subscription(self):
+        if request.method == 'GET':
+            try: 
+                userid = request.form.get("userid") 
+                
+                transaction = self.__subdao.update(userid = userid, 
+                                     new_start_date = date.today().strftime("%Y-%m-%d %H:%M:%S"))
+                
+                return self.sendResponse({
+                    'message' : 'OK',
+                    'renewed' : transaction,
+                })
+                
             except Exception as e: 
                 return self.badRequest(e) 
         else: 
