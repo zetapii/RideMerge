@@ -19,7 +19,6 @@ class BenefitJSONFactory(JSONFactoryInterface):
 
     def convertToObject(self,
                          json : dict):
-        print(json) 
         try:
             surge = json.get("apply_surge")
             if type(surge) == type(str):

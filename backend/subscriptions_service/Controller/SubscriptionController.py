@@ -54,6 +54,11 @@ class SubscriptionController(object):
             rule = '/find_subscription_details',
             view_func = self.__find_subscription_benefits,
         )
+        
+        self.__app.add_url_rule(
+            rule = '/check_expiry',
+            view_func = self.__check_if_subscription_expired,
+        )
     
     def runApp(self, port : int):
         self.__app.run(debug = True)
@@ -67,9 +72,9 @@ class SubscriptionController(object):
                 benefit = self.__benefitfactory.convertToObject(body)
                 benefit_id = self.__benefitdao.add(benefit = benefit)
 
+                
                 body = dict(body) 
                 body['benefit_id'] = str(benefit_id)
-
                 subscription = self.__subscriptionfactory.convertToObject(body) 
                 subscription_id = self.__subdao.add(subscription)
 
@@ -175,9 +180,28 @@ class SubscriptionController(object):
                 userid = request.form.get("userid") 
                 subscription = self.__subdao.find(userid = userid)
                 
+                if subscription == None: 
+                    res = {
+                        'message' : 'Not Found',
+                    }
+                    
+                    return self.__app.response_class(
+                        response = json.dumps(res),
+                        status = 200, 
+                        mimetype = 'application/json'
+                    )
+                if subscription.checkExpired() == True: 
+                    res = {
+                        'message' : 'expired',
+                    }
+                    
+                    return self.__app.response_class(
+                        response = json.dumps(res),
+                        status = 200, 
+                        mimetype = 'application/json'
+                    )
                 benefit_id = subscription.getBenefit() 
                 
-                print(benefit_id) 
                 benefit = self.__benefitdao.find(mongo_id = benefit_id)  
                 
                 
@@ -209,6 +233,41 @@ class SubscriptionController(object):
                 status = 405, 
                 mimetype = 'application/json'
             )
+    
+    def __check_if_subscription_expired(self):
+        if request.method == 'GET':
+            try: 
+                userid = request.form.get("userid") 
+                subscription = self.__subdao.find(userid = userid)
+                
+                isExpired = subscription.checkExpired() 
+                
+                print(isExpired) 
+                
+                res = {
+                    'message' : 'OK',
+                    'isExpired' : isExpired,
+                }
+                
+                return self.__app.response_class(
+                    response = json.dumps(res),
+                    status = 200, 
+                    mimetype = 'application/json',
+                )
+            except Exception as e: 
+                print(e) 
+                res = {
+                    'message' : 'Bad Request',
+                }
+                return self.__app.response_class(
+                    status = 400, 
+                    mimetype = 'application/json' 
+                )
+        else: 
+           return self.__app.response_class(
+                status = 405, 
+                mimetype = 'application/json'
+            ) 
     
     
     
