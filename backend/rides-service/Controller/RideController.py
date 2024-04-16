@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../services')
+sys.path.append('../../rides-service')
 
 import json 
 from sqlalchemy.ext.declarative import DeclarativeMeta
@@ -7,6 +7,8 @@ from enum import Enum
 from flask import Flask, jsonify, request
 import requests
 from DAO import RideDAO
+from services import RideService
+
 app = Flask(__name__)
 
 class AlchemyEncoder(json.JSONEncoder):
@@ -56,69 +58,61 @@ def change_status():
         return jsonify({'status' : 'success'})
     else:   
         return jsonify({'status' : 'failure'})
-
-'''Fetch the Rides for the passenger From Start Location to End Location'''
-'''This just fetches price and the models available'''
-
+    
 @app.route('/passenger/rides', methods=['GET']) 
 def fetch_rides_passenger():
-    #fetch basic details
     source = request.get_json()['source']
     destination = request.get_json()['destination']
     is_secure = request.get_json()['is_secure']
     available_rides = RideDAO.RideDAO.fetch_rides_passsenger(source, destination, is_secure)
     return jsonify(available_rides)
         
-
-'''Parameters : user_id, Cab Model, Source, Destination, is_secure'''
 @app.route('/passenger/match_ride', methods=['POST'])
 def match_ride():
-    pass 
-    ##create a ride and set the status of the ride to 1 , showing that the user is interested in the ride
-    ##ride object will be created here
-    ##db involved -> Ride
+    ride_id = RideDAO.RideDAO.match_ride(request.get_json()['passenger_id'], request.get_json()['source'], request.get_json()['destination'], request.get_json()['is_secure'], request.get_json()['vehicle_model'])
+    return jsonify({'ride_id':ride_id})
 
 '''Fetches All the rides requested by the passengers'''
-#No parameters to be passed
-@app.route('/driver/rides', methods=['GET'])
+@app.route('/driver/rides/<id>', methods=['GET'])
 def fetch_rides_driver():
-    ##db involved -> fetched from rides db where status is pending
-    pass 
+    rides = RideDAO.RideDAO.fetch_rides_driver(id)
+    return json.loads(json.dumps(rides, cls=AlchemyEncoder))
 
-'''Accept the Ride for the Driver'''
-#parameters to be passed are ride_id and drivervehicle_id 
+
 @app.route('/driver/accept_ride', methods=['POST'])
 def accept_ride_driver():
-    pass 
-    ##db involved -> Ride
-    ##also push otp to user , thi is jut dummy for now
+    ride_id = request.get_json()['ride_id']
+    drivervehicle_id = request.get_json()['drivervehicle_id']
+    if RideDAO.RideDAO.accept_ride_driver(ride_id, drivervehicle_id) != None:
+        return jsonify({'status' : 'success'})
+    else:
+        return jsonify({'status' : 'failure'})
 
-'''pickkup the passenger by the driver and otp is shared'''
-'''Parameters to be passed are otp and ride_id'''
 @app.route('/driver/pickup_passenger', methods=['POST'])
 def pickup_passenger():
-    pass
-    ##pull otp from user
-    ###db involved -> Ride
-    ###just change the status of the ride to start
-
+    ride_id = request.get_json()['ride_id']
+    otp = request.get_json()['otp']
+    if RideDAO.RideDAO.pickup_passenger(ride_id, otp) != None:
+        return jsonify({'status' : 'success'})
+    else:
+        return jsonify({'status' : 'failure'})
 ##parameter is just the ride id
 
-@app.route('/passenger/complete_ride', methods=['POST']) ##complete ride completes the ride
+@app.route('/passenger/complete_ride', methods=['POST']) 
 def complete_ride():
-    pass 
-    #this will just mark the ride as completed and the passenger will be able to rate the driver
-    ##db inovled -> Ride
-    ##Just change the status to completed
-
-##parameter is just the ride id
-@app.route('/passenger/ride_fare', methods=['GET'])
-def get_ride_fare():
-    pass
-    ##get the fare of the ride
-    ##now the fare will be calculated based on the model, subscription of the user and the distance travelled
-    ##db involved -> Ride and other microservices call
+    ride_id = request.get_json()['ride_id']
+    if RideDAO.RideDAO.complete_ride(ride_id) != None:
+        return jsonify({'status' : 'success'})
+    else :
+        return jsonify({'status' : 'failure'})
+    
+@app.route('/passenger/ride_fare/<id>', methods=['GET'])
+def get_ride_fare(id):
+    ride_details = RideDAO.RideDAO.get_ride_details(id)
+    if ride_details == None:
+        return jsonify({'fare':None})
+    fare = RideService.RideService.get_fare(ride_details.start_location,ride_details.drop_location,ride_details.vehicle_model)
+    return jsonify({'fare':fare})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)
-
