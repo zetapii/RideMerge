@@ -1,4 +1,5 @@
 from enum import Enum 
+from dataclasses import dataclass
 
 import sys
 sys.path.append('../../entitymanager-service')
@@ -10,6 +11,8 @@ from sqlalchemy.orm import relationship
 from Entities import base 
 
 Base = base.Base 
+
+@dataclass
 class Passenger(Base):
     __tablename__ = 'Passenger'
     id = Column(String, primary_key=True)
@@ -17,4 +20,6 @@ class Passenger(Base):
     password = Column(String)
     email = Column(String)
     phone = Column(String)
+
+
     

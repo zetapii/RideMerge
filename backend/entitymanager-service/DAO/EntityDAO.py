@@ -23,6 +23,9 @@ Session = sessionmaker(bind=engine)
 
 session = Session()
 
+Driver = Driver.Driver
+Passenger = Passenger.Passenger
+Vehicle = Vehicle.Vehicle
 '''
 
 class Driver(Base):
@@ -44,7 +47,8 @@ class Passenger(Base):
     email = Column(String)
     phone = Column(String)
 '''
-class EntityDAO :
+class EntityDAO : 
+
 
     #write method to create driver adn create passenger
     @staticmethod
@@ -66,7 +70,7 @@ class EntityDAO :
         passenger = session.query(Passenger).filter(Passenger.phone == phone).first()
         if passenger : 
             return None
-        passenger = Passenger(id = str(uuid.uuid4()), name = name, password = password, email = email, phone = phone, driving_license = driving_license)
+        passenger = Passenger(id = str(uuid.uuid4()), name = name, password = password, email = email, phone = phone)
         session.add(passenger)
         session.commit()
         return passenger.id    
@@ -77,10 +81,13 @@ class EntityDAO :
         vehicle = session.query(Vehicle).filter(Vehicle.registration_number == registration_number).first()
         if vehicle:
             return None
+        driver = session.query(Driver).filter(Driver.id == driver_id).first()
+        if not driver:
+            return None
         vehicle = Vehicle(id = str(uuid.uuid4()), driver_id = driver_id , vehicle_model = vehicle_model, registration_number = registration_number, insurance_number = insurance_number, manufacturer = manufacturer, manufacturing_year = manufacturing_year)
         session.add(vehicle)
         session.commit()
-        return vehicle.id
+        return vehicle.id 
     
     @staticmethod
     def login_passenger(phone, password):
@@ -97,3 +104,33 @@ class EntityDAO :
         if driver:
             return driver.id
         return None
+
+    @staticmethod
+    def get_driver(id):
+        driver = session.query(Driver).filter(Driver.id == id).first()
+        return driver
+    
+    @staticmethod
+    def get_drivers():
+        drivers = session.query(Driver).all()
+        return drivers
+
+    @staticmethod
+    def get_passenger(id):
+        passenger = session.query(Passenger).filter(Passenger.id == id).first()
+        return passenger
+    
+    @staticmethod
+    def get_passengers():
+        passengers = session.query(Passenger).all()
+        return passengers
+    
+    @staticmethod
+    def get_vehicle(id):
+        vehicles = session.query(Vehicle).filter(Vehicle.driver_id == id).all()
+        return vehicles 
+        
+    @staticmethod
+    def get_vehicles():
+        vehicle = session.query(Vehicle).all()
+        return vehicle
