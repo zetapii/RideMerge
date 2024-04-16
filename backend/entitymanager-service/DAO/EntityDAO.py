@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../services')
+sys.path.append('../../Entities')
 
 from enum import Enum
 import uuid
@@ -23,20 +23,49 @@ Session = sessionmaker(bind=engine)
 
 session = Session()
 
-class UserDAO :
+'''
+
+class Driver(Base):
+    __tablename__ = 'Driver'
+    id = Column(String, primary_key=True)
+    name = Column(String)
+    password = Column(String)
+    email = Column(String)
+    phone = Column(String)
+    driving_license = Column(String)
+'''
+
+'''
+class Passenger(Base):
+    __tablename__ = 'Passenger'
+    id = Column(String, primary_key=True)
+    name = Column(String)
+    password = Column(String)
+    email = Column(String)
+    phone = Column(String)
+'''
+class EntityDAO :
 
     #write method to create driver adn create passenger
     @staticmethod
     def create_driver(name, password, email, phone, driving_license):
         '''Create a driver'''
+        '''check if same phone number exists or not'''
+        driver = session.query(Driver).filter(Driver.phone == phone).first()
+        if driver:
+            return None
         driver = Driver(id = str(uuid.uuid4()), name = name, password = password, email = email, phone = phone, driving_license = driving_license)
         session.add(driver)
         session.commit()
         return driver.id
 
     @staticmethod
-    def create_passenger(name, password, email, phone, driving_license):
+    def create_passenger(name, password, email, phone):
         '''Create a passenger'''
+        '''check if same phone number exists or not'''
+        passenger = session.query(Passenger).filter(Passenger.phone == phone).first()
+        if passenger : 
+            return None
         passenger = Passenger(id = str(uuid.uuid4()), name = name, password = password, email = email, phone = phone, driving_license = driving_license)
         session.add(passenger)
         session.commit()
