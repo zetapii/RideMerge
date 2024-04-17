@@ -1,0 +1,10 @@
+create database payment_management;
+use payment_management;
+
+create table payment (
+    id varchar(255),
+    user_id varchar(255),
+    payment_method varchar(255),
+    amount int,
+    ride_id varchar(255)
+);
