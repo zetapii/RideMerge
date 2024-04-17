@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request
 import requests
 from DAO import RideDAO
 from services import RideService
+from enum import IntEnum
 
 app = Flask(__name__)
 
@@ -28,11 +29,10 @@ class AlchemyEncoder(json.JSONEncoder):
 
         return json.JSONEncoder.default(self, obj)
 
-class DriverStatus(Enum):
+class DriverStatus(IntEnum):
     DRIVING = 0
     WAITING = 1
     OFFLINE = 2
-
 
 @app.route('/fetch/driver_vehicles/<driver_id>', methods=['GET'])
 def fetch_driver_vehicle(driver_id):
@@ -55,13 +55,18 @@ def add_driver_vehicle():
 def change_status():
     driver_vehicleid = request.get_json()['driver_vehicleid']
     status = request.get_json()['status']
-
+    if status == 'WAITING':
+        status = int(DriverStatus.WAITING)
+    elif status == 'DRIVING':
+        status = int(DriverStatus.DRIVING)
+    else : 
+        status = int(DriverStatus.OFFLINE)
     if RideDAO.RideDAO.change_status(driver_vehicleid, status) != None:
         return jsonify({'status' : 'success'})
     else:   
         return jsonify({'status' : 'failure'})
     
-@app.route('/passenger/rides', methods=['GET']) 
+@app.route('/passenger/rides', methods=['POST']) 
 def fetch_rides_passenger():
     source = request.get_json()['source']
     destination = request.get_json()['destination']
@@ -69,21 +74,25 @@ def fetch_rides_passenger():
     passenger_id = request.get_json()['passenger_id']
     available_rides = RideDAO.RideDAO.fetch_rides_passsenger(source, destination, is_secure,passenger_id)
     return jsonify(available_rides)
-        
-@app.route('/passenger/match_ride', methods=['POST'])
-def match_ride():
-    ride_id = RideDAO.RideDAO.match_ride(request.get_json()['passenger_id'], request.get_json()['source'], request.get_json()['destination'], request.get_json()['is_secure'], request.get_json()['vehicle_model'])
+
+@app.route('/passenger/book_ride', methods=['POST'])
+def book_ride():
+    ride_id = RideDAO.RideDAO.book_ride(request.get_json()['passenger_id'], request.get_json()['source'], request.get_json()['destination'], request.get_json()['is_secure'], request.get_json()['vehicle_model'])
     return jsonify({'ride_id':ride_id})
 
 '''Fetches All the rides requested by the passengers'''
-@app.route('/driver/rides/<id>', methods=['GET'])
-def fetch_rides_driver(id):
-    rides = RideDAO.RideDAO.fetch_rides_driver(id)
+@app.route('/driver/rides/<driver_id>', methods=['GET'])
+def fetch_rides_driver(driver_id):
+    rides = RideDAO.RideDAO.fetch_rides_driver(driver_id)
+    if not rides:
+        return jsonify({'rides':None})
     return json.loads(json.dumps(rides, cls=AlchemyEncoder))
 
 @app.route('/ride_details/<id>', methods=['GET'])
 def get_ride_details(id):
     ride_details = RideDAO.RideDAO.get_ride_details(id)
+    ##also get ETA by first getting duration of trip and then subtracting from the time when ride is booked
+    ##start time of the ride is the time when the ride is booked
     if not ride_details:
         return jsonify({'ride_details':None})
     return json.loads(json.dumps(ride_details, cls=AlchemyEncoder))
@@ -91,7 +100,7 @@ def get_ride_details(id):
 @app.route('/driver/accept_ride', methods=['POST'])
 def accept_ride_driver():
     ride_id = request.get_json()['ride_id']
-    drivervehicle_id = request.get_json()['drivervehicle_id']
+    drivervehicle_id = request.get_json()['driver_id']
     if RideDAO.RideDAO.accept_ride_driver(ride_id, drivervehicle_id) != None:
         return jsonify({'status' : 'success'})
     else:

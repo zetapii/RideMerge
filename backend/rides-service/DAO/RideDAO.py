@@ -65,7 +65,7 @@ class RideDAO :
         final_list = []
         for driver_vehicle in driver_vehicles :
             vehicle = RideService.RideService.fetch_vehicles_detail(driver_vehicle.vehicle_id)
-            final_list.append({'id': driver_vehicle.id, 'driver_id' : driver_vehicle.driver_id, 'vehicle_id' : driver_vehicle.vehicle_id, 'model' : vehicle['vehicle_model'],'status':driver_vehicle.driver_status,'current_location':driver_vehicle.current_location})
+            final_list.append({'id': driver_vehicle.id, 'driver_id' : driver_vehicle.driver_id, 'vehicle_id' : driver_vehicle.vehicle_id, 'model' : vehicle['vehicle_model'],'status':DriverStatus(driver_vehicle.driver_status).name,'current_location':driver_vehicle.current_location,'registration_number':vehicle['registration_number']})
         print("wer are pringint the final list")
         return final_list
 
@@ -97,6 +97,7 @@ class RideDAO :
             )
 
         final_list = []
+        ##initialise a set and then maybe convert back to list
         for driver_vehicle in driver_vehicles :
             vehicle = RideService.RideService.fetch_vehicles_detail(driver_vehicle.vehicle_id)
             driver = RideService.RideService.fetch_driver_details(driver_vehicle.driver_id)
@@ -105,7 +106,7 @@ class RideDAO :
         return final_list
 
     @staticmethod
-    def match_ride(passenger_id, source , destination , is_secure , vehicle_model) : 
+    def book_ride(passenger_id, source , destination , is_secure , vehicle_model) : 
         '''Match a ride with the given parameters'''
         '''Ride Entity is created here'''
         ride = Ride(ride_id = str(uuid.uuid4()), driver_id = None, passenger_id = passenger_id, start_location = source, drop_location = destination)
@@ -116,11 +117,11 @@ class RideDAO :
         return ride.ride_id
 
     @staticmethod
-    def fetch_rides_driver(driver_vehicle_id) : 
-        drivervehicle = session.query(DriverVehicle).filter(DriverVehicle.id == driver_vehicle_id).first()
-        if not drivervehicle :
+    def fetch_rides_driver(driver_id) :
+        driver_vehicle = session.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id,DriverVehicle.driver_status==int(DriverStatus.WAITING)).first()
+        print("this is driver_vehicle which maybe empty", driver_vehicle)
+        if not driver_vehicle:
             return None
-        driver_id = drivervehicle.driver_id
         '''
         driver_rating = session.query(func.avg(RideMetadata.ride_rating)).join(RideMetadata, RideMetadata.ride_id == Ride.ride_id).filter(Ride.driver_id == driver_id).first()
         cnt_rides = session.query(func.count(Ride.ride_id)).filter(Ride.driver_id == driver_id).first()
@@ -140,21 +141,17 @@ class RideDAO :
         if not driver_rating: 
             driver_rating=0
         if driver_rating < RideDAO.SAFE_RIDE_RATING or cnt_rides < RideDAO.SAFE_RIDE_NUMRIDES:
-            return session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == RideStatus.PENDING, RideMetadata.is_secure == False, RideMetadata.vehicle_model == drivervehicle.model).all()
+            return session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == RideStatus.PENDING, RideMetadata.is_secure == False, RideMetadata.vehicle_model == driver_vehicle.model).all()
         else : 
-            return session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == int(RideStatus.PENDING) , RideMetadata.vehicle_model == drivervehicle.model).all()
+            return session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == int(RideStatus.PENDING) , RideMetadata.vehicle_model == driver_vehicle.model).all()
 
     @staticmethod
-    def accept_ride_driver(ride_id,driver_vehicle_id) :
-
-        driver_vehicle = session.query(DriverVehicle).filter(DriverVehicle.id == driver_vehicle_id).first()
+    def accept_ride_driver(ride_id,driver_id) :
+        driver_vehicle = session.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id,DriverVehicle.driver_status==int(DriverStatus.WAITING)).first()
         if not driver_vehicle:
             return None
-        driver_id = driver_vehicle.driver_id
         print(ride_id)
         print(driver_id)
-
-
         ride = session.query(Ride).filter(Ride.ride_id == ride_id).first()
         ride.driver_id = driver_id
         session.commit()
@@ -233,27 +230,26 @@ class RideDAO :
         if not ride : 
             return None
         ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride_id).first()
-        return {'ride_id':ride.ride_id,'driver_id':ride.driver_id,'passenger_id':ride.passenger_id,'start_location':ride.start_location,'drop_location':ride.drop_location,'status':ride_metadata.ride_status,'vehicle_id':ride_metadata.vehicle_id,'vehicle_model':ride_metadata.vehicle_model,'ride_otp':ride_metadata.ride_otp}
-
+        return {'ride_id':ride.ride_id,'driver_id':ride.driver_id,'passenger_id':ride.passenger_id,'start_location':ride.start_location,'drop_location':ride.drop_location,'status': RideStatus(ride_metadata.ride_status).name,'vehicle_id':ride_metadata.vehicle_id,'vehicle_model':ride_metadata.vehicle_model,'ride_otp':ride_metadata.ride_otp}
 
     @staticmethod
     def get_current_ride_driver(driver_id):
-        ride = session.query(Ride).filter(Ride.driver_id == driver_id).first()
-        if not ride : 
-            return None
-        ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride.ride_id).first()
-        if not ride or ride_metadata.ride_status == int(RideStatus.COMPLETED) : 
-            return None
-        return {'ride_id':ride.ride_id,'driver_id':ride.driver_id,'passenger_id':ride.passenger_id,'start_location':ride.start_location,'drop_location':ride.drop_location,'status':ride_metadata.ride_status,'vehicle_id':ride_metadata.vehicle_id,'vehicle_model':ride_metadata.vehicle_model,'ride_otp':ride_metadata.ride_otp}
+        pass
+        # ride_metadata = session.query(RideMetadata).filter(RideMetadata.driv == ride.ride_id,RideMetadata.ride_status != int(RideStatus.COMPLETED)).first()
+        # if not ride_metadata : 
+        #     return None
+        # ride = session.query(Ride).filter(Ride.ride_id == ride_metadata.ride_id).first()
+        #return {'ride_id':ride.ride_id,'driver_id':ride.driver_id,'passenger_id':ride.passenger_id,'start_location':ride.start_location,'drop_location':ride.drop_location,'status':ride_metadata.ride_status,'vehicle_id':ride_metadata.vehicle_id,'vehicle_model':ride_metadata.vehicle_model,'ride_otp':ride_metadata.ride_otp}
 
     @staticmethod
     def get_current_ride_passenger(passenger_id):
-        ride = session.query(Ride).filter(Ride.passenger_id == passenger_id).first()
-        if not ride : 
-            return None
-        ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride.ride_id).first()
-        if not ride or ride_metadata.ride_status == int(RideStatus.COMPLETED) : 
-            return None
-        return {'ride_id':ride.ride_id,'driver_id':ride.driver_id,'passenger_id':ride.passenger_id,'start_location':ride.start_location,'drop_location':ride.drop_location,'status':ride_metadata.ride_status,'vehicle_id':ride_metadata.vehicle_id,'vehicle_model':ride_metadata.vehicle_model,'ride_otp':ride_metadata.ride_otp}
+        pass
+        # ride = session.query(Ride).filter(Ride.passenger_id == passenger_id).first()
+        # if not ride : 
+        #     return None
+        # ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride.ride_id).first()
+        # if not ride or ride_metadata.ride_status == int(RideStatus.COMPLETED) : 
+        #     return None
+        # return {'ride_id':ride.ride_id,'driver_id':ride.driver_id,'passenger_id':ride.passenger_id,'start_location':ride.start_location,'drop_location':ride.drop_location,'status':ride_metadata.ride_status,'vehicle_id':ride_metadata.vehicle_id,'vehicle_model':ride_metadata.vehicle_model,'ride_otp':ride_metadata.ride_otp}
 
     '''Write methods for car pooling'''
