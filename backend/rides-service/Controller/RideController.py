@@ -34,9 +34,9 @@ class DriverStatus(Enum):
     OFFLINE = 2
 
 
-@app.route('/fetch/driver_vehicle/<id>', methods=['GET'])
-def fetch_driver_vehicle(id):
-    driver_vehicle = RideDAO.RideDAO.get_drivervehicle(id)
+@app.route('/fetch/driver_vehicles/<driver_id>', methods=['GET'])
+def fetch_driver_vehicle(driver_id):
+    driver_vehicle = RideDAO.RideDAO.get_drivervehicle(driver_id)
     if driver_vehicle != None:
         return json.loads(json.dumps(driver_vehicle, cls=AlchemyEncoder))
     else : 
@@ -53,9 +53,10 @@ def add_driver_vehicle():
     
 @app.route('/driver/change_status', methods=['POST'])
 def change_status():
-    driver_id = request.get_json()['driver_id']
+    driver_vehicleid = request.get_json()['driver_vehicleid']
     status = request.get_json()['status']
-    if RideDAO.RideDAO.change_status(driver_id, status) != None:
+
+    if RideDAO.RideDAO.change_status(driver_vehicleid, status) != None:
         return jsonify({'status' : 'success'})
     else:   
         return jsonify({'status' : 'failure'})
@@ -65,7 +66,8 @@ def fetch_rides_passenger():
     source = request.get_json()['source']
     destination = request.get_json()['destination']
     is_secure = request.get_json()['is_secure']
-    available_rides = RideDAO.RideDAO.fetch_rides_passsenger(source, destination, is_secure)
+    passenger_id = request.get_json()['passenger_id']
+    available_rides = RideDAO.RideDAO.fetch_rides_passsenger(source, destination, is_secure,passenger_id)
     return jsonify(available_rides)
         
 @app.route('/passenger/match_ride', methods=['POST'])
@@ -117,9 +119,8 @@ def get_ride_fare(id):
     ride_details = RideDAO.RideDAO.get_ride_details(id)
     if ride_details == None:
         return jsonify({'fare':None})
-    fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'])
+    fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'],ride_details['passenger_id'])
     return jsonify({'fare':fare})
-
 
 @app.route('/driver/current_ride/<id>', methods=['GET'])
 def get_current_ride_driver(id):

@@ -11,6 +11,7 @@ from sqlalchemy.orm import relationship
 from Entities import base 
 
 Base = base.Base 
+
 @dataclass
 class Vehicle(Base):
     __tablename__ = 'Vehicle'

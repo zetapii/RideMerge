@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../Entities')
+sys.path.append('../../entitymanager-service')
 
 from enum import Enum
 import uuid
@@ -10,6 +10,8 @@ from Entities import base
 from Entities import Driver
 from Entities import Passenger
 from Entities import Vehicle
+
+from services import EntityService
 
 # Create an engine to connect to the SQLite database
 engine = create_engine('sqlite:///users_service.db', echo=True)
@@ -86,6 +88,9 @@ class EntityDAO :
         vehicle = Vehicle(id = str(uuid.uuid4()), driver_id = driver_id , vehicle_model = vehicle_model, registration_number = registration_number, insurance_number = insurance_number, manufacturer = manufacturer, manufacturing_year = manufacturing_year)
         session.add(vehicle)
         session.commit()
+
+        EntityService.EntityService.create_driver_vehicle(driver_id, vehicle.id)
+
         return vehicle.id 
     
     @staticmethod

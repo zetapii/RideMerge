@@ -44,6 +44,8 @@ def register_passenger():
 def add_vehicle():
     data = request.get_json()
     vehicle_id = EntityDAO.EntityDAO.add_vehicle(data['driver_id'], data['vehicle_model'], data['registration_number'], data['insurance_number'], data['manufacturer'], data['manufacturing_year'])
+    if not vehicle_id:
+        return jsonify({'vehicle_id' : None})
     return jsonify({'vehicle_id' : vehicle_id})
 
 @app.route('/login/passenger', methods=['POST'])
@@ -94,7 +96,7 @@ def fetch_all_passengers():
     if passengers:
         return json.loads(json.dumps(passengers, cls=AlchemyEncoder))
     else:
-        return jsonify({'error': 'No vehicles found'}), 400
+        return jsonify({'error': 'No passengers found'}), 400
     
 @app.route('/fetch/drivers', methods=['GET'])
 def fetch_all_drivers():
@@ -102,7 +104,7 @@ def fetch_all_drivers():
     if drivers:
         return json.loads(json.dumps(drivers, cls=AlchemyEncoder))
     else:
-        return jsonify({'error': 'No vehicles found'}), 400
+        return jsonify({'error': 'No drivers found'}), 400
 
 @app.route('/fetch/vehicles', methods=['GET'])
 def fetch_all_vehicles():

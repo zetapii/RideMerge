@@ -54,7 +54,7 @@ class RideDAO :
         vehicle = RideService.RideService.fetch_vehicles_detail(vehicle_id)
         if session.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id, DriverVehicle.vehicle_id == vehicle_id).first() :
             return None
-        driver_vehicle = DriverVehicle(id = str(uuid.uuid4()) ,driver_id = driver_id, vehicle_id = vehicle_id, driver_status = 3, current_location = None,model = vehicle['vehicle_model'])
+        driver_vehicle = DriverVehicle(id = str(uuid.uuid4()) ,driver_id = driver_id, vehicle_id = vehicle_id, driver_status = 2, current_location = None,model = vehicle['vehicle_model'])
         session.add(driver_vehicle)
         session.commit()
         return driver_vehicle.driver_id 
@@ -70,7 +70,7 @@ class RideDAO :
         return final_list
 
     @staticmethod
-    def fetch_rides_passsenger(source, destination, is_secure) : 
+    def fetch_rides_passsenger(source, destination, is_secure, passenger_id) : 
         driver_vehicles = session.query(DriverVehicle).filter(DriverVehicle.driver_status == 1).all()
         if is_secure:
             # Subquery to calculate average rating and count of rides per driver
@@ -100,7 +100,7 @@ class RideDAO :
         for driver_vehicle in driver_vehicles :
             vehicle = RideService.RideService.fetch_vehicles_detail(driver_vehicle.vehicle_id)
             driver = RideService.RideService.fetch_driver_details(driver_vehicle.driver_id)
-            fare  = RideService.RideService.get_fare(source, destination, vehicle['vehicle_model'])
+            fare  = RideService.RideService.get_fare(source, destination, vehicle['vehicle_model'],passenger_id)
             final_list.append({'driver_name':driver['name'], 'vehicle_id' : driver_vehicle.vehicle_id, 'model' : vehicle['vehicle_model'],'vehicle_number':vehicle['registration_number'],'fare':fare})
         return final_list
 
@@ -160,6 +160,9 @@ class RideDAO :
         session.commit()
         
         ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride_id).first()
+
+        if ride_metadata.ride_status != int(RideStatus.PENDING) :
+            return None
         ride_metadata.ride_status = int(RideStatus.ACCEPTED)
         ride_metadata.vehicle_id = driver_vehicle.vehicle_id
         ride_metadata.ride_otp = str(uuid.uuid4())
@@ -178,9 +181,14 @@ class RideDAO :
         if not ride : 
             return None
         ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride_id).first()
+        print(ride_metadata.ride_status)
+        if ride_metadata.ride_status != int(RideStatus.ACCEPTED) :
+            return None
         if ride_metadata.ride_otp != otp : 
             return None
         ride_metadata.ride_status = int(RideStatus.PASSENGER_PICKED)
+        print("commintting")
+        print(ride_metadata.ride_status)
         session.commit()
         return ride.ride_id
     
@@ -198,9 +206,12 @@ class RideDAO :
         return ride_metadata.ride_id
     
     @staticmethod
-    def change_status(driver_id, status) : 
-        driver_vehicle = session.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id).first()
-        #driver status can't be changed manually driver is driving 
+    def change_status(driver_vehicle_id,status) :
+        ##driving status status can't be manually changed to waiting 
+        if status not in [1,2] :
+            return None
+        driver_vehicle = session.query(DriverVehicle).filter(DriverVehicle.id == driver_vehicle_id).first()
+        #driving status status can't be changed manually driver is driving 
         if (not driver_vehicle) or (driver_vehicle.driver_status == DriverStatus.DRIVING) : 
             return None
         driver_vehicle.driver_status = status
