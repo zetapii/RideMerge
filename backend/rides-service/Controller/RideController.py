@@ -33,23 +33,24 @@ class DriverStatus(Enum):
     WAITING = 1
     OFFLINE = 2
 
+
 @app.route('/fetch/driver_vehicle/<id>', methods=['GET'])
 def fetch_driver_vehicle(id):
     driver_vehicle = RideDAO.RideDAO.get_drivervehicle(id)
     if driver_vehicle != None:
-        return json.dumps(driver_vehicle, cls=AlchemyEncoder)
+        return json.loads(json.dumps(driver_vehicle, cls=AlchemyEncoder))
+    else : 
+        return jsonify({'driver_vehicle':None})
 
 @app.route('/driver/driver_vehicle',methods=['POST'])
 def add_driver_vehicle():
     driver_id = request.get_json()['driver_id']
-    vehicle_id = request.get_json()['vehicle_id']
-    
-    model = request.get_json()['model']
-    if RideDAO.RideDAO.create_drivervehicle(driver_id, vehicle_id, None , model) != None:
+    vehicle_id = request.get_json()['vehicle_id']    
+    if RideDAO.RideDAO.create_drivervehicle(driver_id, vehicle_id) != None:
         return jsonify({'status' : 'success'})
     else:
         return jsonify({'status' : 'failure'})
-
+    
 @app.route('/driver/change_status', methods=['POST'])
 def change_status():
     driver_id = request.get_json()['driver_id']
@@ -74,10 +75,16 @@ def match_ride():
 
 '''Fetches All the rides requested by the passengers'''
 @app.route('/driver/rides/<id>', methods=['GET'])
-def fetch_rides_driver():
+def fetch_rides_driver(id):
     rides = RideDAO.RideDAO.fetch_rides_driver(id)
     return json.loads(json.dumps(rides, cls=AlchemyEncoder))
 
+@app.route('/ride_details/<id>', methods=['GET'])
+def get_ride_details(id):
+    ride_details = RideDAO.RideDAO.get_ride_details(id)
+    if not ride_details:
+        return jsonify({'ride_details':None})
+    return json.loads(json.dumps(ride_details, cls=AlchemyEncoder))
 
 @app.route('/driver/accept_ride', methods=['POST'])
 def accept_ride_driver():
@@ -96,7 +103,6 @@ def pickup_passenger():
         return jsonify({'status' : 'success'})
     else:
         return jsonify({'status' : 'failure'})
-##parameter is just the ride id
 
 @app.route('/passenger/complete_ride', methods=['POST']) 
 def complete_ride():
@@ -111,8 +117,23 @@ def get_ride_fare(id):
     ride_details = RideDAO.RideDAO.get_ride_details(id)
     if ride_details == None:
         return jsonify({'fare':None})
-    fare = RideService.RideService.get_fare(ride_details.start_location,ride_details.drop_location,ride_details.vehicle_model)
+    fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'])
     return jsonify({'fare':fare})
 
+
+@app.route('/driver/current_ride/<id>', methods=['GET'])
+def get_current_ride_driver(id):
+    ride = RideDAO.RideDAO.get_current_ride_driver(id)
+    if not ride : 
+        return jsonify({'ride':None})
+    return json.loads(json.dumps(ride, cls=AlchemyEncoder))
+
+@app.route('/passenger/current_ride/<id>', methods=['GET'])
+def get_current_ride_passenger(id):
+    ride = RideDAO.RideDAO.get_current_ride_passenger(id)
+    if not ride : 
+        return jsonify({'ride':None})
+    return json.loads(json.dumps(ride, cls=AlchemyEncoder))
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002)
+    app.run(host='0.0.0.0', port=5002,debug=True)

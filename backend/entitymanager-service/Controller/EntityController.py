@@ -44,7 +44,7 @@ def register_passenger():
 def add_vehicle():
     data = request.get_json()
     vehicle_id = EntityDAO.EntityDAO.add_vehicle(data['driver_id'], data['vehicle_model'], data['registration_number'], data['insurance_number'], data['manufacturer'], data['manufacturing_year'])
-    return jsonify({'status' : vehicle_id})
+    return jsonify({'vehicle_id' : vehicle_id})
 
 @app.route('/login/passenger', methods=['POST'])
 def login_passenger():
@@ -80,7 +80,7 @@ def fetch_passenger(id):
     else :
         return jsonify({'error': 'Id Not Found'}), 400
     
-@app.route('/fetch/vehicles/<id>', methods=['GET'])
+@app.route('/fetch/vehicle/<id>', methods=['GET'])
 def fetch_vehicle(id):
     vehicles = EntityDAO.EntityDAO.get_vehicle(id)
     if vehicles:
@@ -95,7 +95,7 @@ def fetch_all_passengers():
         return json.loads(json.dumps(passengers, cls=AlchemyEncoder))
     else:
         return jsonify({'error': 'No vehicles found'}), 400
-
+    
 @app.route('/fetch/drivers', methods=['GET'])
 def fetch_all_drivers():
     drivers = EntityDAO.EntityDAO.get_drivers()
@@ -112,5 +112,9 @@ def fetch_all_vehicles():
     else:
         return jsonify({'error': 'No vehicles found'}), 400
     
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({'status': 'pong'})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)

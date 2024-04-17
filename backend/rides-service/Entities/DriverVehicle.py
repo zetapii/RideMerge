@@ -7,20 +7,20 @@
 from enum import Enum 
 
 import sys
-# sys.path.append('../../services')
+sys.path.append('../../rides-services')
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, Column, Integer,Float, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship 
-import base 
+from Entities import base 
 
 Base = base.Base 
 
 class DriverStatus(Enum):
     DRIVING = 0
-    WAITING = 2
-    OFFLINE = 3
+    WAITING = 1
+    OFFLINE = 2
     
 class DriverVehicle(Base) : 
     __tablename__ = 'DriverVehicle'

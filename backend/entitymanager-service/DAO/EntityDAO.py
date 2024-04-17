@@ -49,7 +49,6 @@ class Passenger(Base):
 '''
 class EntityDAO : 
 
-
     #write method to create driver adn create passenger
     @staticmethod
     def create_driver(name, password, email, phone, driving_license):
@@ -127,7 +126,7 @@ class EntityDAO :
     
     @staticmethod
     def get_vehicle(id):
-        vehicles = session.query(Vehicle).filter(Vehicle.driver_id == id).all()
+        vehicles = session.query(Vehicle).filter(Vehicle.id == id).first()
         return vehicles 
         
     @staticmethod
