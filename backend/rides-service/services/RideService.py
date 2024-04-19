@@ -1,14 +1,14 @@
 
 
 import requests
-class RideService : 
-
+class RideService :
     BASE_URL_DRIVER = "http://127.0.0.1:5001/fetch/driver"
     BASE_URL_PASSENGER = "http://127.0.0.1:5001/fetch/passenger"
     BASE_URL_VEHICLE = "http://127.0.0.1:5001/fetch/vehicle"
     BASE_URL_SUBSCRIPTION = "http://127.0.0.1:5000/find_subscription_details"
     PER_KM_PRICE = 15
     ModelMap = {'ModelA':50,'ModelB':40,'ModelC':30}
+
     @staticmethod
     def fetch_passenger_details(id) : 
         response = requests.get(f"{RideService.BASE_URL_PASSENGER}/{id}")
@@ -65,6 +65,10 @@ class RideService :
                 add_to_fare+=surge_price
                 fare+=add_to_fare
             
-        return fare + add_to_fare    
-# RideService.fetch_vehicles_detail("6e39e675-53be-4f5b-b44c-f870046a8134")
+        return fare + add_to_fare 
+    
 
+    @staticmethod
+    def fetch_rides(src,dst,external_service):
+        available_rides = external_service.fetch_rides(src,dst)
+        return available_rides
