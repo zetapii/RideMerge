@@ -1,40 +1,6 @@
 from gui import sg
 from gui import LabelInputText, switch_window
-from api_helper import send_request, save_token
-
-
-# Driver Login Window
-def driver_login():
-    layout = [[sg.Text('Driver Login')],
-              [LabelInputText(key='phone', prompt='Phone')],
-              [
-                  LabelInputText(key='password',
-                                 password_char='*',
-                                 prompt='Password')
-              ], [sg.Button('Login'),
-                  sg.Button('Register')]]
-
-    window = sg.Window('Driver Login', layout)
-
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Cancel'):
-            break
-        elif event == 'Login':
-            data = {'phone': values['phone'], 'password': values['password']}
-            response = send_request('login/driver', 'POST', data)
-            if response['driver_id']:
-                sg.popup(
-                    f"Login successful!\nDriver ID: {response['driver_id']}")
-                save_token(response['token'], 'driver')
-                switch_window(window,
-                              lambda: driver_dashboard(response['driver_id']))
-            else:
-                sg.popup('Invalid credentials')
-        elif event == 'Register':
-            switch_window(window, register_driver_window)
-
-    window.close()
+from api_helper import send_request, clear_session
 
 
 # Driver Registration Window
@@ -112,9 +78,14 @@ def add_vehicle_window(driver_id):
 
 
 # Show My Vehicles Window
-def show_my_vehicles(driver_id):
+def my_vehicles_window(driver_id):
     layout = [[sg.Text('My Vehicles')],
               [sg.Listbox(values=[], key='vehicles', size=(50, 6))],
+              [sg.Text('Set Vehicle Status')],
+              [
+                  sg.Radio('Offline', 'status', key='OFFLINE', default=True),
+                  sg.Radio('Available', 'status', key='WAITING'),
+              ], [sg.Button('Update Status')],
               [sg.Button('Refresh'), sg.Button('Close')]]
 
     window = sg.Window('My Vehicles', layout)
@@ -125,46 +96,129 @@ def show_my_vehicles(driver_id):
             break
         elif event == 'Refresh':
             # TODO
-            # response = send_request(f'fetch/vehicles/{driver_id}', 'GET')
-            response = send_request(f'fetch/vehicles', 'GET')
+            response = send_request(f'fetch/driver_vehicles/{driver_id}',
+                                    'GET')
+            # response = send_request(f'fetch/vehicles', 'GET')
             if 'error' in response:
                 sg.popup(response['error'])
             else:
                 vehicles = response
+                vehicle_data = {}
+                for i, vehicle in enumerate(vehicles):
+                    vehicle_data[i] = {
+                        'driver_vehicle_id': vehicle['id'],
+                        'driver_id': vehicle['driver_id'],
+                        'vehicle_id': vehicle['vehicle_id'],
+                        'model': vehicle['model'],
+                        'status': vehicle['status'],
+                        'current_location': vehicle['current_location'],
+                        'registration_number': vehicle['registration_number'],
+                    }
                 window['vehicles'].update([
-                    f"Vehicle ID: {vehicle['id']}, Model: {vehicle['vehicle_model']}, Registration: {vehicle['registration_number']}"
+                    f"Vehicle: {vehicle['model']} | Status: {vehicle['status']} | Location: {vehicle['current_location']}"
                     for vehicle in vehicles
                 ])
+        elif event == 'Update Status':
+            status = 'OFFLINE' if values['OFFLINE'] else 'WAITING'
+            # get selected vehicle
+            selected_index = window['vehicles'].GetIndexes()[0]
+            selected_vehicle = vehicle_data[selected_index]
+
+            data = {
+                'driver_vehicleid': selected_vehicle['driver_vehicle_id'],
+                'status': status
+            }
+            response = send_request('driver/change_status', 'POST', data)
+            if response['status'] == 'success':
+                sg.popup('Status updated successfully!')
+            else:
+                sg.popup('Status update failed. Please try again.')
+
+    window.close()
+
+
+# Rides Available Window
+def rides_available_window(driver_id):
+    layout = [
+        [sg.Text('Rides Available')],
+        [sg.Text('Select a ride to accept')],
+        [sg.Listbox(values=[], key='rides', size=(50, 6))],
+        [sg.Button('Accept')],
+        [sg.Button('Refresh'), sg.Button('Close')],
+    ]
+
+    window = sg.Window('Rides Available', layout)
+
+    while True:
+        event, values = window.read()
+        if event in (sg.WIN_CLOSED, 'Close'):
+            break
+        elif event == 'Refresh':
+            response = send_request(f'driver/rides/{driver_id}', 'GET')
+            if 'error' in response:
+                sg.popup(response['error'])
+            else:
+                rides = response
+                ride_data = {}
+                for i, ride in enumerate(rides):
+                    ride_data[i] = {
+                        'ride_id': ride['ride_id'],
+                        'passenger_id': ride['passenger_id'],
+                        'start_location': ride['start_location'],
+                        'drop_location': ride['drop_location'],
+                    }
+                window['rides'].update([
+                    f"Passenger: {ride['passenger_id']} | Start: {ride['start_location']} | Drop: {ride['drop_location']}"
+                    for ride in rides
+                ])
+        elif event == 'Accept':
+            if not window['rides'].GetIndexes():
+                sg.popup('Please select a ride to accept')
+                continue
+
+            selected_index = window['rides'].GetIndexes()[0]
+            selected_ride = ride_data[selected_index]
+            data = {
+                'driver_id': driver_id,
+                'ride_id': selected_ride['ride_id']
+            }
+            response = send_request('driver/accept_ride', 'POST', data)
+            if response['status'] == 'success':
+                sg.popup('Ride accepted successfully!')
+            else:
+                sg.popup('Ride acceptance failed. Please try again.')
 
     window.close()
 
 
 # Driver Dashboard
 def driver_dashboard(driver_id):
-    layout = [[sg.Text(f"Driver ID: {driver_id}")],
-              [sg.Button('Rides Available')], [sg.Text('Set Vehicle Status')],
-              [
-                  sg.Radio('Offline', 'status', key='offline', default=True),
-                  sg.Radio('Riding', 'status', key='riding'),
-                  sg.Radio('Available', 'status', key='available')
-              ], [sg.Button('Update Status')], [sg.Button('Add Vehicle')],
-              [sg.Button('My Vehicles')], [sg.Button('Logout')]]
+    layout = [
+        [sg.Text(f"Driver ID: {driver_id}")],
+        [sg.Button('Rides Available')],
+        [sg.Button('Add Vehicle')],
+        [sg.Button('My Vehicles')],
+        [sg.Button('Wallet')],
+        [sg.Button('Logout')],
+    ]
 
     window = sg.Window('Driver Dashboard', layout)
 
     while True:
         event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Logout'):
+        if event in (sg.WIN_CLOSED, 'Cancel'):
             break
-        elif event == 'Update Status':
-            status = next((k for k, v in values.items() if v), None)
-            data = {'driver_id': driver_id, 'status': status}
-            response = send_request('driver/update_status', 'POST', data)
-            if response['status']:
-                sg.popup('Status updated successfully!')
         elif event == 'Add Vehicle':
             switch_window(window, lambda: add_vehicle_window(driver_id))
         elif event == 'My Vehicles':
-            switch_window(window, lambda: show_my_vehicles(driver_id))
+            switch_window(window, lambda: my_vehicles_window(driver_id))
+        elif event == 'Rides Available':
+            switch_window(window, lambda: rides_available_window(driver_id))
+        elif event == 'Wallet':
+            # TODO: Implement wallet feature
+            sg.popup('Wallet feature is not available yet.')
+        elif event == 'Logout':
+            clear_session(user_type='driver')
+            break
 
     window.close()

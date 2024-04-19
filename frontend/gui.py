@@ -1,6 +1,5 @@
 import PySimpleGUI as sg
 
-sg.theme("DarkBrown1")
 sg.set_options(font=("Arial", 12),
                scaling=2,
                margins=(100, 100),

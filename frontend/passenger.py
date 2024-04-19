@@ -1,40 +1,6 @@
 from gui import sg
 from gui import LabelInputText, switch_window
-from api_helper import send_request, save_token
-
-
-# Passenger Login and Registration
-def passenger_login():
-    layout = [[sg.Text('Passenger Login')],
-              [LabelInputText(key='phone', prompt='Phone')],
-              [
-                  LabelInputText(key='password',
-                                 password_char='*',
-                                 prompt='Password')
-              ], [sg.Button('Login'),
-                  sg.Button('Register')]]
-
-    window = sg.Window('Passenger Login', layout)
-
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Cancel'):
-            break
-        elif event == 'Login':
-            data = {'phone': values['phone'], 'password': values['password']}
-            response = send_request('login/passenger', 'POST', data)
-            if response['passenger_id']:
-                sg.popup(
-                    f"Login successful!\nPassenger ID: {response['passenger_id']}"
-                )
-                save_token(response['token'], 'passenger')
-                switch_window(window, passenger_dashboard)
-            else:
-                sg.popup('Invalid credentials')
-        elif event == 'Register':
-            switch_window(window, register_passenger_window)
-
-    window.close()
+from api_helper import send_request, clear_session
 
 
 # Passenger Registration Window
@@ -74,67 +40,226 @@ def register_passenger_window():
 
 
 # Passenger Dashboard
-def passenger_dashboard():
-    layout = [[sg.Text('Book Ride')],
-              LabelInputText('Start Location:', key='start_loc'),
-              LabelInputText('End Location:', key='end_loc'),
-              [sg.Checkbox('Is Secure Trip', key='is_secure_trip')],
-              [sg.Button('Show Rides')],
-              [sg.Listbox(values=[], key='rides', size=(50, 6))],
-              [sg.Button('Book')], [sg.Button('Logout')]]
+def passenger_dashboard(passenger_id):
+    # check if a ride exists
+    response = send_request(f'passenger/current_ride/{passenger_id}', 'GET')
+
+    # NOTE: if we get 'ride_id' field, it means we have an existing ride
+    if response.get('ride_id'):
+        # TODO: fare is not available in the response
+        ride_status_window(response['ride_id'], response['start_location'],
+                           response['drop_location'],
+                           response['vehicle_model'], 100)
+
+    layout = [
+        [sg.Text('Book Ride')],
+        LabelInputText('Start Location:', key='start_loc'),
+        LabelInputText('End Location:', key='end_loc'),
+        [sg.Checkbox('Is Secure Trip', key='is_secure_trip')],
+        [sg.Button('Show Rides')],
+        [sg.Listbox(values=[], key='rides', size=(50, 6))],
+        [sg.Button('Book')],
+        [sg.Button('Ride History')],
+        [sg.Button('Logout')],
+    ]
 
     window = sg.Window('Passenger Dashboard', layout)
 
     while True:
         event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Logout'):
+        if event == sg.WIN_CLOSED:
             break
         elif event == 'Show Rides':
             # Fetch rides from the backend
-            response = send_request('fetch/vehicles', 'GET')
+            response = send_request(
+                'passenger/rides', 'POST', {
+                    'passenger_id': passenger_id,
+                    'source': values['start_loc'],
+                    'destination': values['end_loc'],
+                    'is_secure': values['is_secure_trip']
+                })
             if 'error' in response:
                 sg.popup(response['error'])
             else:
                 rides = response
                 ride_data = {}
                 for i, ride in enumerate(rides):
-                    ride['estd_time_of_arrival'] = '10 mins'
-                    ride['distance'] = '5 km'
-                    ride['cost'] = 'Rs. 100'
                     ride_data[i] = {
-                        'estd_time_of_arrival': ride['estd_time_of_arrival'],
-                        'distance': ride['distance'],
-                        'vehicle_model': ride['vehicle_model'],
-                        'cost': ride['cost']
+                        'vehicle_model': ride['model'],
+                        'fare': ride['fare']
                     }
                 window['rides'].update([
-                    f"ETA: {ride['estd_time_of_arrival']}, Distance: {ride['distance']}, Car Model: {ride['vehicle_model']}, Cost: {ride['cost']}"
+                    f"Vehicle: {ride['model']} | Fare: {ride['fare']}"
                     for ride in rides
                 ])
         elif event == 'Book':
+            # check if a ride is selected
+            if not window['rides'].GetIndexes():
+                sg.popup('Please select a ride')
+                continue
+
             selected_index = window['rides'].GetIndexes()[0]
             selected_ride = ride_data[selected_index]
-            book_ride(values['start_loc'], values['end_loc'],
-                      selected_ride['vehicle_model'], selected_ride['cost'])
+
+            # Book the selected ride
+            response = send_request(
+                'passenger/book_ride', 'POST', {
+                    'passenger_id': passenger_id,
+                    'vehicle_model': selected_ride['vehicle_model'],
+                    'source': values['start_loc'],
+                    'destination': values['end_loc'],
+                    'is_secure': values['is_secure_trip'],
+                })
+
+            if response['ride_id']:
+                switch_window(
+                    window,
+                    lambda: ride_status_window(response['ride_id'], values[
+                        'start_loc'], values['end_loc'], selected_ride[
+                            'vehicle_model'], selected_ride['fare']))
+            else:
+                sg.popup('Ride booking failed. Please try again.')
+        elif event == 'Ride History':
+            switch_window(window, lambda: ride_history_window(passenger_id))
+        elif event == 'Logout':
+            clear_session(user_type='passenger')
+            break
 
     window.close()
 
 
-# Book Ride Window
-def book_ride(start_loc, end_loc, car_model, cost):
-    layout = [[sg.Text('Confirm Ride')],
-              [sg.Text(f'Start Location: {start_loc}')],
-              [sg.Text(f'End Location: {end_loc}')],
-              [sg.Text(f'Car Model: {car_model}')], [sg.Text(f'Cost: {cost}')],
-              [sg.Button('Confirm'), sg.Button('Cancel')]]
+# Ride History Window
+def ride_history_window(passenger_id):
+    layout = [
+        [sg.Text('Ride History')],
+        [sg.Text('Select a ride to view details')],
+        [sg.Listbox(values=[], key='rides', size=(50, 6))],
+        [sg.Button('View Details')],
+        [sg.Button('Back')],
+    ]
+
+    window = sg.Window('Ride History', layout, finalize=True)
+
+    # fetch history from the backend
+    response = send_request(f'passenger/ride_history/{passenger_id}', 'GET')
+    rides = response
+
+    ride_data = {}
+    for i, ride in enumerate(rides):
+        ride_data[i] = {
+            'start_loc': ride['start_location'],
+            'end_loc': ride['drop_location'],
+            'vehicle_model': ride['vehicle_model'],
+            'status': ride['status'],
+        }
+
+    window['rides'].update([
+        f"Start: {ride['start_location']} | Drop: {ride['drop_location']} | Vehicle: {ride['vehicle_model']} | Status: {ride['status']}"
+        for ride in rides
+    ])
+
+    while True:
+        event, values = window.read()
+        if event in (sg.WIN_CLOSED, 'Back'):
+            break
+
+    window.close()
+
+
+# Ride completed window
+def ride_completed_window(ride_id, start_loc, end_loc, vehicle_model, fare):
+    layout = [
+        [sg.Text('Ride Completed!')],
+        [sg.Text(f'Start Location: {start_loc}')],
+        [sg.Text(f'End Location: {end_loc}')],
+        [sg.Text(f'Vehicle Model: {vehicle_model}')],
+        [sg.Text(f'Fare: {fare}')],
+        [sg.Button('Close')],
+    ]
+
+    window = sg.Window('Ride Completed', layout)
+
+    while True:
+        event, values = window.read()
+        if event in (sg.WIN_CLOSED, 'Close'):
+            break
+
+    # TODO: implement payment gateway integration here
+
+    window.close()
+
+
+# Ride Status Window
+def ride_status_window(ride_id, start_loc, end_loc, vehicle_model, fare):
+    layout = [
+        [
+            sg.Text('Waiting for driver to accept the ride...',
+                    key='status_msg')
+        ],
+        [sg.Text(f'Start Location: {start_loc}')],
+        [sg.Text(f'End Location: {end_loc}')],
+        [sg.Text(f'Vehicle Model: {vehicle_model}')],
+        [sg.Text(f'Fare: {fare}')],
+        [sg.Text(f'Driver:'), sg.Text('-', key='driver')],
+        [sg.Text(f'Ride ID: {ride_id}')],
+        [sg.Text(f'Ride Status:'),
+         sg.Text('-', key='status')],
+        [sg.Text(f'Ride OTP:'), sg.Text('-', key='otp')],
+        [sg.Button('Refresh'), sg.Button('Cancel Ride')],
+    ]
 
     window = sg.Window('Book Ride', layout)
 
     while True:
-        event, _ = window.read()
+        event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Cancel'):
             break
-        elif event == 'Confirm':
-            sg.popup('Payment options will be implemented soon!')
+        elif event == 'Refresh':
+            # Fetch ride status from the backend
+            response = send_request(f'ride_details/{ride_id}', 'GET')
+
+            old_status = window['status'].DisplayText
+
+            # update layout
+            status_msgs = {
+                'PENDING': 'Waiting for driver to accept the ride...',
+                'ACCEPTED': 'Driver accepted the ride!',
+                'PASSENGER_PICKED': 'Driver is on the way to pick you up!',
+                'DRIVER_CANCELLED': 'Driver cancelled the ride',
+                'PASSENGER_CANCELLED': 'You cancelled the ride',
+                'COMPLETED': 'Ride completed!',
+            }
+            if old_status != response['status']:
+                sg.popup(status_msgs[response['status']])
+
+            window['status'].update(response['status'])
+            window['otp'].update(response['ride_otp'])
+            window['driver'].update(response['driver_id'])
+            window['status_msg'].update(status_msgs[response['status']])
+
+            if response['status'] == 'PENDING':
+                pass
+            elif response['status'] == 'ACCEPTED':
+                pass
+            elif response['status'] == 'PASSENGER_PICKED':
+                pass
+            elif response['status'] == 'DRIVER_CANCELLED':
+                break
+            elif response['status'] == 'PASSENGER_CANCELLED':
+                break
+            elif response['status'] == 'COMPLETED':
+                switch_window(
+                    window, lambda: ride_completed_window(
+                        ride_id, start_loc, end_loc, vehicle_model, fare))
+                break
+        elif event == 'Cancel Ride':
+            response = send_request(f'passenger/cancel_ride', 'POST',
+                                    {'ride_id': ride_id})
+            # if response['status'] == 'success':
+            if response.get('status') == 'success':
+                sg.popup('Ride cancelled successfully!')
+                break
+            else:
+                sg.popup('Ride cancellation failed. Please try again.')
 
     window.close()

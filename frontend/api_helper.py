@@ -2,17 +2,20 @@ import requests
 import json
 
 # BASE_URL = 'http://0.0.0.0:5001'
-BASE_URL = 'http://10.2.131.17:5001'
-user_token = None
+BASE_URL = 'http://10.2.131.17:5005'
+user_session = None
 
 
 # Helper function to send requests to the backend
-def send_request(endpoint, method='GET', data=None):
-    if user_token:
+def send_request(endpoint, method='GET', data=None, base_url=None):
+    if user_session:
         if data:
-            data['token'] = user_token['token']
+            data['token'] = user_session['token']
 
-    url = f"{BASE_URL}/{endpoint}"
+    if not base_url:
+        base_url = BASE_URL
+
+    url = f"{base_url}/{endpoint}"
     headers = {'Content-Type': 'application/json'}
     if method == 'GET':
         response = requests.get(url)
@@ -38,17 +41,28 @@ def change_base_url(new_base_url):
 
 
 # Save token to disk
-def save_token(token, user_type):
-    global user_token
-    user_token = {'token': token, 'user_type': user_type}
-    json.dump(user_token, open('token.json', 'w'))
+def save_session(token, user_type, user_id):
+    global user_session
+    user_session = {'token': token, 'user_type': user_type, 'user_id': user_id}
+    json.dump(user_session, open(f'token_{user_type}.json', 'w'))
 
 
-# Load token from disk
-def load_token():
-    global user_token
+# Load session from disk
+def load_session(user_type):
+    global user_session
     try:
-        user_token = json.load(open('token.json', 'r'))
-        return user_token
+        user_session = json.load(open(f'token_{user_type}.json'))
+        print("Existing session found")
+        print(user_session)
+        return user_session
     except:
+        print("No existing session found")
         return None
+
+
+# Clear session
+def clear_session(user_type):
+    global user_session
+    user_session = None
+    print("Session cleared")
+    json.dump({}, open(f'token_{user_type}.json', 'w'))
