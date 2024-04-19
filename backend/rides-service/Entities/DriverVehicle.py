@@ -1,9 +1,3 @@
-
-
-##keep an enum for driving status which shows what the driver is doing currently
-##like driving , waiting for a ride , offline etc
-##This will be used to show the status of the driver in the frontend
-
 from enum import Enum 
 
 import sys

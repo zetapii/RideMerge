@@ -27,28 +27,8 @@ session = Session()
 
 Driver = Driver.Driver
 Passenger = Passenger.Passenger
-Vehicle = Vehicle.Vehicle
-'''
+Vehicle = Vehicle.Vehicle 
 
-class Driver(Base):
-    __tablename__ = 'Driver'
-    id = Column(String, primary_key=True)
-    name = Column(String)
-    password = Column(String)
-    email = Column(String)
-    phone = Column(String)
-    driving_license = Column(String)
-'''
-
-'''
-class Passenger(Base):
-    __tablename__ = 'Passenger'
-    id = Column(String, primary_key=True)
-    name = Column(String)
-    password = Column(String)
-    email = Column(String)
-    phone = Column(String)
-'''
 class EntityDAO : 
 
     #write method to create driver adn create passenger

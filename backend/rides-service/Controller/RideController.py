@@ -9,6 +9,9 @@ import requests
 from DAO import RideDAO
 from services import RideService
 from enum import IntEnum
+from services.ExternalService.factory import ExternalRideFactory
+
+ExternalRideFactory = ExternalRideFactory.ExternalRideFactory 
 
 app = Flask(__name__)
 
@@ -68,82 +71,160 @@ def change_status():
     
 @app.route('/passenger/rides', methods=['POST']) 
 def fetch_rides_passenger():
-    source = request.get_json()['source']
-    destination = request.get_json()['destination']
-    is_secure = request.get_json()['is_secure']
-    passenger_id = request.get_json()['passenger_id']
-    available_rides = RideDAO.RideDAO.fetch_rides_passsenger(source, destination, is_secure,passenger_id)
-    return jsonify(available_rides)
+    try :
+        source = request.get_json()['source']
+        destination = request.get_json()['destination']
+        is_secure = request.get_json()['is_secure']
+        passenger_id = request.get_json()['passenger_id']
+        available_rides = RideDAO.RideDAO.fetch_rides_passsenger(source, destination, is_secure,passenger_id)
+        return jsonify(available_rides)
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
 @app.route('/passenger/book_ride', methods=['POST'])
 def book_ride():
-    ride_id = RideDAO.RideDAO.book_ride(request.get_json()['passenger_id'], request.get_json()['source'], request.get_json()['destination'], request.get_json()['is_secure'], request.get_json()['vehicle_model'])
-    return jsonify({'ride_id':ride_id})
+    try :
+        ride_id = RideDAO.RideDAO.book_ride(request.get_json()['passenger_id'], request.get_json()['source'], request.get_json()['destination'], request.get_json()['is_secure'], request.get_json()['vehicle_model'])
+        return jsonify({'ride_id':ride_id})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
-'''Fetches All the rides requested by the passengers'''
 @app.route('/driver/rides/<driver_id>', methods=['GET'])
 def fetch_rides_driver(driver_id):
-    rides = RideDAO.RideDAO.fetch_rides_driver(driver_id)
-    if not rides:
-        return jsonify({'rides':None})
-    return json.loads(json.dumps(rides, cls=AlchemyEncoder))
+    try : 
+        rides = RideDAO.RideDAO.fetch_rides_driver(driver_id)
+        if not rides:
+            return jsonify([])
+        return json.loads(json.dumps(rides, cls=AlchemyEncoder))
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
 @app.route('/ride_details/<id>', methods=['GET'])
 def get_ride_details(id):
-    ride_details = RideDAO.RideDAO.get_ride_details(id)
-    ##also get ETA by first getting duration of trip and then subtracting from the time when ride is booked
-    ##start time of the ride is the time when the ride is booked
-    if not ride_details:
-        return jsonify({'ride_details':None})
-    return json.loads(json.dumps(ride_details, cls=AlchemyEncoder))
+    try : 
+        ride_details = RideDAO.RideDAO.get_ride_details(id)
+        ##also get ETA by first getting duration of trip and then subtracting from the time when ride is booked
+        ##start time of the ride is the time when the ride is booked
+        if not ride_details:
+            return jsonify({'ride_details':None})
+        return json.loads(json.dumps(ride_details, cls=AlchemyEncoder))
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
 @app.route('/driver/accept_ride', methods=['POST'])
 def accept_ride_driver():
-    ride_id = request.get_json()['ride_id']
-    drivervehicle_id = request.get_json()['driver_id']
-    if RideDAO.RideDAO.accept_ride_driver(ride_id, drivervehicle_id) != None:
-        return jsonify({'status' : 'success'})
-    else:
-        return jsonify({'status' : 'failure'})
+    try : 
+        ride_id = request.get_json()['ride_id']
+        drivervehicle_id = request.get_json()['driver_id']
+        if RideDAO.RideDAO.accept_ride_driver(ride_id, drivervehicle_id) != None:
+            return jsonify({'status' : 'success'})
+        else:
+            return jsonify({'status' : 'failure'})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
 @app.route('/driver/pickup_passenger', methods=['POST'])
 def pickup_passenger():
-    ride_id = request.get_json()['ride_id']
-    otp = request.get_json()['otp']
-    if RideDAO.RideDAO.pickup_passenger(ride_id, otp) != None:
-        return jsonify({'status' : 'success'})
-    else:
-        return jsonify({'status' : 'failure'})
+    try : 
+        ride_id = request.get_json()['ride_id']
+        otp = request.get_json()['otp']
+        if RideDAO.RideDAO.pickup_passenger(ride_id, otp) != None:
+            return jsonify({'status' : 'success'})
+        else:
+            return jsonify({'status' : 'failure'})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
-@app.route('/passenger/complete_ride', methods=['POST']) 
+@app.route('/driver/complete_ride', methods=['POST']) 
 def complete_ride():
-    ride_id = request.get_json()['ride_id']
-    if RideDAO.RideDAO.complete_ride(ride_id) != None:
-        return jsonify({'status' : 'success'})
-    else :
-        return jsonify({'status' : 'failure'})
+    try : 
+        ride_id = request.get_json()['ride_id']
+        if RideDAO.RideDAO.complete_ride(ride_id) != None:
+            return jsonify({'status' : 'success'})
+        else :
+            return jsonify({'status' : 'failure'})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
     
 @app.route('/passenger/ride_fare/<id>', methods=['GET'])
 def get_ride_fare(id):
-    ride_details = RideDAO.RideDAO.get_ride_details(id)
-    if ride_details == None:
-        return jsonify({'fare':None})
-    fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'],ride_details['passenger_id'])
-    return jsonify({'fare':fare})
+    try : 
+        ride_details = RideDAO.RideDAO.get_ride_details(id)
+        if ride_details == None:
+            return jsonify({'fare':None,'error':'error in fetching ride details'})
+        fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'],ride_details['passenger_id'])
+        return jsonify({'fare':fare})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
-@app.route('/driver/current_ride/<id>', methods=['GET'])
-def get_current_ride_driver(id):
-    ride = RideDAO.RideDAO.get_current_ride_driver(id)
-    if not ride : 
-        return jsonify({'ride':None})
-    return json.loads(json.dumps(ride, cls=AlchemyEncoder))
+@app.route('/driver/current_ride/<driver_id>', methods=['GET'])
+def get_current_ride_driver(driver_id):
+    try : 
+        ride = RideDAO.RideDAO.get_current_ride_driver(driver_id)
+        if not ride : 
+            return jsonify({'ride':None,'error':'error occured'})
+        return json.loads(json.dumps(ride, cls=AlchemyEncoder))
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
-@app.route('/passenger/current_ride/<id>', methods=['GET'])
-def get_current_ride_passenger(id):
-    ride = RideDAO.RideDAO.get_current_ride_passenger(id)
-    if not ride : 
-        return jsonify({'ride':None})
-    return json.loads(json.dumps(ride, cls=AlchemyEncoder))
+@app.route('/passenger/current_ride/<passenger_id>', methods=['GET'])
+def get_current_ride_passenger(passenger_id):
+    try : 
+        ride = RideDAO.RideDAO.get_current_ride_passenger(passenger_id)
+        if not ride : 
+            return jsonify({'ride':None,'status':'NORIDE'})
+        return json.loads(json.dumps(ride, cls=AlchemyEncoder))
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
+
+@app.route('/passenger/cancel_ride', methods=['POST'])
+def cancel_ride_passenger():
+    try : 
+        ride_id = request.get_json()['ride_id']
+        print(ride_id)
+        print("hiola")
+        if RideDAO.RideDAO.passenger_cancel_ride(ride_id) != None:
+            return jsonify({'status' : 'success'})
+        else:
+            return jsonify({'status' : 'failure'})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
+
+@app.route('/passenger/rate_ride', methods=['POST'])
+def rate_ride_passenger():
+    try : 
+        ride_id = request.get_json()['ride_id']
+        rating = request.get_json()['rating']
+        if RideDAO.RideDAO.rate_ride(ride_id, rating) != None:
+            return jsonify({'status' : 'success'})
+        else:
+            return jsonify({'status' : 'failure'})
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
+    
+##write api to fetch ride history of passenger
+@app.route('/passenger/ride_history/<passenger_id>', methods=['GET'])
+def fetch_ride_history_passenger(passenger_id):
+    try : 
+        rides = RideDAO.RideDAO.ride_history(passenger_id)
+        if not rides:
+            return jsonify([])
+        return json.loads(json.dumps(rides, cls=AlchemyEncoder))
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
+    
+@app.route('/fetch/external/rides', methods=['GET'])
+def fetch_external_rides():
+    try : 
+        source = request.get_json()['source']
+        destination = request.get_json()['destination']
+        platform = request.get_json()['platform']
+        available_rides = external_ride_factory.get_ride_service(platform).fetch_rides(source, destination)
+        return jsonify(available_rides)
+    except Exception as e:
+        return jsonify({'error':'error occured' , 'debug':str(e)})
 
 if __name__ == '__main__':
+    global external_ride_factory
+    external_ride_factory = ExternalRideFactory("TOKEN")
     app.run(host='0.0.0.0', port=5002,debug=True)
