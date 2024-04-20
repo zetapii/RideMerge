@@ -1,4 +1,5 @@
 import requests
+import json
 import random
 class RideService :
     BASE_URL_DRIVER = "http://127.0.0.1:5001/fetch/driver"
@@ -25,14 +26,42 @@ class RideService :
         print(response.json())
         return response.json()
     
-    ##IMPLEMENT THIS FUNCTION TOMRROW
     @staticmethod
-    def get_routeistance(src,drop):
+    def fetch_distance_details(source,destination):
+        
+        access_token = 'KRbBDs36XEs1DQ3fCFGTiDxVa8q0HKnwlQhezeXYaV2DNJnpc6Z7FGDpS9JutByl'
+
+        # Origins and destinations
+        # origins = '42.536457,-70.985786'
+        # destinations = '42.328674, -72.664658'
+
+        origins = source
+        destinations = destination
+
+        # Construct the URL
+        url = f'https://api-v2.distancematrix.ai/maps/api/distancematrix/json?origins={origins}&destinations={destinations}&key={access_token}'
+
+        # Make the GET request
+        response = requests.get(url)
+
+        # Check if the request was successful
+        try : 
+            if response.status_code == 200:
+                print("Request successful")
+                print(json.dumps(response.json(), indent=4))  # Pretty print the JSON response
+                return response.json()['rows'][0]['elements'][0]['distance']['value'],response.json()['rows'][0]['elements'][0]['duration']['value']
+        except Exception as e:
+            print(f"Request failed with status code {response.status_code}")
+        return None , None
+
+    @staticmethod
+    def get_routedistance(src,drop):
         return 100
+    
 
     @staticmethod
     def get_fare(src, drop, model, passenger_id,is_safe = False):
-        distance_in_km = RideService.get_routeistance(src, drop)
+        distance_in_km = RideService.get_routedistance(src, drop)
         fare = distance_in_km * RideService.PER_KM_PRICE
         premium_price = RideService.PremiumMap.get(model, 0)
         surge_price = random.randint(0, 10)

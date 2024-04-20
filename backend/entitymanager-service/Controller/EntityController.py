@@ -19,6 +19,33 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 Driver = Driver.Driver
 Passenger = Passenger.Passenger
 
+
+app = Flask(__name__)
+
+import redis
+# Connect to Redis
+redis_host = 'localhost'
+redis_port = 6379
+redis_db = 0
+redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
+
+
+def fetch_from_redis(key):
+    try:
+        vehicle_data = redis_client.get(key)
+        if vehicle_data:
+            return json.loads(vehicle_data)
+        return None
+    except redis.RedisError as e:
+        print(f"Redis Error: {e}")
+        return None
+
+def cache_in_redis(key, data):
+    try:
+        redis_client.set(key, json.dumps(data, cls=AlchemyEncoder))
+    except redis.RedisError as e:
+        print(f"Redis Error: {e}")
+
 class AlchemyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj.__class__, DeclarativeMeta):
@@ -109,21 +136,31 @@ def verify_token():
 @app.route('/fetch/driver/<id>', methods=['GET'])
 def fetch_driver(id):
     try : 
+        driver = fetch_from_redis('driver_' + id)
+        if driver:
+            return driver
         user_dao = UserDAO.UserDAO()
         driver = user_dao.get_user(Driver,id)
-        if driver : 
+        if driver :
+            cache_in_redis('driver_' + id, driver)
             return json.loads(json.dumps(driver, cls=AlchemyEncoder))
         else :
             return jsonify({'error': 'Id Not Found'}), 400
     except Exception as e:
         return jsonify({'error':'error in fetching driver','debug':str(e)}), 400
-    
+
+
 @app.route('/fetch/passenger/<id>', methods=['GET'])
 def fetch_passenger(id):
-    try : 
+    
+    try :
+        passenger = fetch_from_redis('passenger_' + id)
+        if passenger:
+            return passenger
         user_dao = UserDAO.UserDAO()
         passenger = user_dao.get_user(Passenger,id)
         if passenger: 
+            cache_in_redis('passenger_' + id, passenger)
             return json.loads(json.dumps(passenger, cls=AlchemyEncoder))
         else :
             return jsonify({'error': 'Id Not Found'}), 400
@@ -133,8 +170,12 @@ def fetch_passenger(id):
 @app.route('/fetch/vehicle/<id>', methods=['GET'])
 def fetch_vehicle(id):
     try : 
+        vehicles = fetch_from_redis('vehicle_' + id)
+        if vehicles:
+            return vehicles
         vehicles = EntityDAO.EntityDAO.get_vehicle(id)
         if vehicles:
+            cache_in_redis('vehicle_' + id, vehicles)
             return json.loads(json.dumps(vehicles, cls=AlchemyEncoder))
         else:
             return jsonify({'error': 'Id Not Found'}), 400
@@ -175,6 +216,6 @@ def fetch_all_vehicles():
             return jsonify({'error': 'No vehicles found'}), 400
     except Exception as e:
         return jsonify({'error':'error in fetching vehicles','debug':str(e)}), 400
-    
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

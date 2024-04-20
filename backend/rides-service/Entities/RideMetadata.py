@@ -33,3 +33,5 @@ class RideMetadata(Base) :
     driver_name = Column(String)
     passenger_name = Column(String)
     ride_fare = Column(Float)
+    ride_ETR = Column(String)
+    ride_distance = Column(Float)

@@ -5,6 +5,8 @@ from enum import Enum
 from enum import IntEnum
 
 import uuid
+import time
+from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine,func
 
@@ -106,19 +108,32 @@ class RideDAO :
         return final_list
 
     @staticmethod
-    def book_ride(passenger_id, source , destination , is_secure , vehicle_model) : 
+    def book_ride(passenger_id, source , destination , is_secure , vehicle_model , is_latlan) : 
         '''Match a ride with the given parameters'''
         '''Ride Entity is created here'''
+
+        current_ride = RideDAO.get_current_ride_passenger(passenger_id)
+        if current_ride :
+            return None
         passenger = RideService.RideService.fetch_passenger_details(passenger_id)
-        print(passenger.get('name'))
+        distance,duration = None , None
+        if is_latlan and is_latlan == True : 
+            distance,duration = RideService.RideService.fetch_distance_details(source,destination)
         ride = Ride(ride_id = str(uuid.uuid4()), passenger_id = passenger_id, start_location = source, drop_location = destination)
         fare = RideService.RideService.get_fare(source, destination, vehicle_model,passenger_id)
         ride_metadata = RideMetadata(id = str(uuid.uuid4()), ride_id = ride.ride_id, ride_status = 1, vehicle_model = vehicle_model ,is_secure = is_secure, passenger_name = passenger.get('name'),ride_fare = fare)
+        if distance : 
+            ride_metadata.ride_distance = distance
+        if duration :
+            ETR_timestamp = duration + int(time.time())
+            ETR_timestamp += 19800
+            ETR_readable = datetime.utcfromtimestamp(ETR_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            ride_metadata.ride_ETR = ETR_readable
         session.add(ride)
         session.add(ride_metadata)
         session.commit()
         return ride.ride_id
-
+    
     @staticmethod
     def fetch_rides_driver(driver_id) :
         print("we got here")
@@ -190,7 +205,6 @@ class RideDAO :
         if ride_metadata.ride_otp != otp : 
             return None
         ride_metadata.ride_status = int(RideStatus.PASSENGER_PICKED)
-        print("commintting")
         print(ride_metadata.ride_status)
         session.commit()
         return ride.ride_id
@@ -249,7 +263,9 @@ class RideDAO :
                 'vehicle_model': ride_metadata.vehicle_model,
                 'ride_otp': ride_metadata.ride_otp,
                 'is_secure': ride_metadata.is_secure,
-                'fare': ride_metadata.ride_fare}
+                'fare': ride_metadata.ride_fare,
+                'distance': ride_metadata.ride_distance,
+                'ETR': ride_metadata.ride_ETR}
     
     @staticmethod
     def get_current_ride_driver(driver_id):
@@ -269,7 +285,9 @@ class RideDAO :
                 'vehicle_id': ride_metadata.vehicle_id, 
                 'vehicle_model': ride_metadata.vehicle_model, 
                 'ride_otp': ride_metadata.ride_otp,
-                'ride_fare': ride_metadata.ride_fare}
+                'ride_fare': ride_metadata.ride_fare,
+                'distance': ride_metadata.ride_distance,
+                'ETR': ride_metadata.ride_ETR}
 
     @staticmethod
     def get_current_ride_passenger(passenger_id):
@@ -289,7 +307,9 @@ class RideDAO :
                 'vehicle_id': ride_metadata.vehicle_id, 
                 'vehicle_model': ride_metadata.vehicle_model, 
                 'ride_otp': ride_metadata.ride_otp,
-                'ride_fare': ride_metadata.ride_fare}
+                'ride_fare': ride_metadata.ride_fare,
+                'distance': ride_metadata.ride_distance,
+                'ETR': ride_metadata.ride_ETR}
     
     @staticmethod
     def passenger_cancel_ride(ride_id):
