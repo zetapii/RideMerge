@@ -9,7 +9,8 @@ from backend.subscriptions_service.Entities.JSONFactory.Implementation.BenefitJS
 from pymongo.mongo_client import MongoClient
 from bson.objectid import ObjectId
 
-
+from bson import json_util
+import json
 class BenefitDAO(SubsBenefitDAOInterface):
 
     """
@@ -108,3 +109,17 @@ class BenefitDAO(SubsBenefitDAOInterface):
         benefit = BenefitJSONFactory().convertToObject(json = found)
 
         return benefit
+    
+    def findAll(self):
+
+        found = self.__benefits.find()
+        if found == None:
+            return None
+        benefits = []
+        for benefit in found:
+            print(benefit)
+            ##get __id mongo id
+            benefits.append(json.loads(json_util.dumps(benefit)))
+            # benefits.append({})
+
+        return benefits

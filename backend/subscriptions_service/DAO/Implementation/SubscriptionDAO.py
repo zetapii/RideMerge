@@ -29,9 +29,12 @@ class SubscriptionDAO(SubsBenefitDAOInterface):
 
     def add(self,
             benefit : SubscriptionPlan):
-
+        
+        
         benefit_json = SubPlanJSONFactory().convertToJSON(benefit)
 
+        if self.__benefits.find_one({'userid' : benefit.getUserID()}) is not None:            
+            return None
         retval = self.__benefits.insert_one(benefit_json)
 
         return retval.inserted_id

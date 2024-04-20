@@ -18,14 +18,12 @@ class SubscriptionPlan(object):
     """
     def __init__(self, 
                  userid : str, 
-                 price : float, 
                  duration : int,
                  benefit_id : str,
                  start_date = None,
                  id = None):
         self.__id = id
         self.__name = userid
-        self.__price = price
         self.__duration = duration
         self.__benefit = benefit_id
         
@@ -44,12 +42,6 @@ class SubscriptionPlan(object):
     
     def setUserID(self, name):
         self.__name = name
-
-    def getPrice(self):
-        return self.__price
-    
-    def setPrice(self, price):
-        self.__price = price
     
     def getDuration(self):
         return self.__duration

@@ -15,6 +15,7 @@ class BenefitJSONFactory(JSONFactoryInterface):
         self.__json['discount_rate']    = benefit.getDiscountRate()
         self.__json['safe_ride']        = benefit.getSafeRide()
         self.__json['premium_vehicle']  = benefit.getPremiumVehicle()
+        self.__json['price']            = benefit.getPrice()
         return self.__json
 
     def convertToObject(self,
@@ -34,12 +35,15 @@ class BenefitJSONFactory(JSONFactoryInterface):
             if type(surge) == type(str):
                 premium  = eval(json.get('premium_vehicle'))
 
+            price = float(json.get("price"))
+
             benefit = Benefit(
                 
                 apply_surge = surge,
                 discount_rate = disc,
                 safe_ride = safe,
-                premium_vehicle = premium
+                premium_vehicle = premium,
+                price = price
             )
 
             return benefit

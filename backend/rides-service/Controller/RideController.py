@@ -134,7 +134,6 @@ def pickup_passenger():
             return jsonify({'status' : 'failure'})
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
-
 @app.route('/driver/complete_ride', methods=['POST']) 
 def complete_ride():
     try : 
@@ -150,9 +149,10 @@ def complete_ride():
 def get_ride_fare(id):
     try : 
         ride_details = RideDAO.RideDAO.get_ride_details(id)
+        print(ride_details)
         if ride_details == None:
             return jsonify({'fare':None,'error':'error in fetching ride details'})
-        fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'],ride_details['passenger_id'])
+        fare = RideService.RideService.get_fare(ride_details['start_location'],ride_details['drop_location'],ride_details['vehicle_model'],ride_details['passenger_id'],ride_details['is_secure'])
         return jsonify({'fare':fare})
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
@@ -223,7 +223,7 @@ def fetch_external_rides():
         return jsonify(available_rides)
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
-
+    
 if __name__ == '__main__':
     global external_ride_factory
     external_ride_factory = ExternalRideFactory("TOKEN")

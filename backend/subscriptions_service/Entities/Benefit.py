@@ -16,6 +16,7 @@ class Benefit(object):
                  discount_rate : float,
                  safe_ride : bool,
                  premium_vehicle : bool,
+                 price : float
                  ): 
         
         self.__id = id 
@@ -23,6 +24,7 @@ class Benefit(object):
         self.__discount_rate = discount_rate
         self.__safe_ride = safe_ride
         self.__premium_vehicle = premium_vehicle
+        self.__price = price
 
     def getId(self):
         return self.__id
@@ -52,8 +54,12 @@ class Benefit(object):
         return self.__premium_vehicle
     
     def setPremiumVehicle(self, premium_vehicle : bool):
-        self.__premium_vehicle = premium_vehicle
+        self.__premium_vehicle = premium_vehicle 
 
+    def getPrice(self):
+        return self.__price
     
+    def setPrice(self, price : float):
+        self.__price = price
     def __str__(self):
         return f'Benefit [id={self.__id},apply_surge={self.__apply_surge}, discount_rate={self.__discount_rate}, safe_ride={self.__safe_ride}, premium_vehicle={self.__premium_vehicle}]'

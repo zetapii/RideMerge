@@ -164,7 +164,7 @@ def fetch_all_drivers():
             return jsonify({'error': 'No drivers found'}), 400
     except Exception as e:
         return jsonify({'error':'error in fetching drivers','debug':str(e)}), 400
-
+    
 @app.route('/fetch/vehicles', methods=['GET'])
 def fetch_all_vehicles():
     try :
@@ -175,7 +175,6 @@ def fetch_all_vehicles():
             return jsonify({'error': 'No vehicles found'}), 400
     except Exception as e:
         return jsonify({'error':'error in fetching vehicles','debug':str(e)}), 400
-
-
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

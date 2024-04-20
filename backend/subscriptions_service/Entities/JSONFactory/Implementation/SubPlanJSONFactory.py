@@ -16,7 +16,6 @@ class SubPlanJSONFactory(JSONFactoryInterface):
 
         self.__json['userid']           = subPlan.getUserID()
         self.__json['benefit_id']       = subPlan.getBenefit()
-        self.__json['price']            = subPlan.getPrice()
         self.__json['duration']         = subPlan.getDuration() 
         self.__json['start_date']       = subPlan.getStartDate().strftime("%Y-%m-%d %H:%M:%S") 
         return self.__json
@@ -28,7 +27,6 @@ class SubPlanJSONFactory(JSONFactoryInterface):
             
             userid = json.get('userid')
             
-            price = float(json.get("price"))
             
             duration = int(json.get("duration"))
             
@@ -41,7 +39,6 @@ class SubPlanJSONFactory(JSONFactoryInterface):
         
             self.__sub = SubscriptionPlan(id = id,
                                           userid = userid,
-                                          price = price,
                                           duration = duration,
                                           benefit_id = benefit,
                                           start_date = start_date)

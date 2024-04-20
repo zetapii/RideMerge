@@ -30,3 +30,6 @@ class RideMetadata(Base) :
     vehicle_id = Column(String)
     vehicle_model = Column(String)
     is_secure = Column(Boolean)
+    driver_name = Column(String)
+    passenger_name = Column(String)
+    ride_fare = Column(Float)

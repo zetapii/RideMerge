@@ -64,7 +64,17 @@ class SubscriptionController(object):
             rule = '/renew_subscription',
             view_func = self.__renew_subscription,
         )
-    
+
+        self.__app.add_url_rule(
+            rule = '/add_benefit',
+            view_func = self.__add_benefit,
+        )    
+
+        self.__app.add_url_rule(
+            rule = '/get_benefit',
+            view_func = self.__get_benefit,
+        )
+
     def runApp(self, port : int):
         self.__app.run(debug = True)
     
@@ -104,17 +114,13 @@ class SubscriptionController(object):
     def __add_subscription(self): 
         if request.method == 'GET':
             try:
-                body = request.form 
-                
-                benefit = self.__benefitfactory.convertToObject(body)
-                benefit_id = self.__benefitdao.add(benefit = benefit)
-
-                
-                body = dict(body) 
-                body['benefit_id'] = str(benefit_id)
+                body = request.form                 
                 subscription = self.__subscriptionfactory.convertToObject(body) 
                 subscription_id = self.__subdao.add(subscription)
-            
+                if subscription_id == None:
+                    return self.sendResponse({
+                        'message' : 'SubscriptionAlreadyExists',
+                    })
                 return self.sendResponse({
                     'message' : 'OK',
                     'subscription_id' : str(subscription_id),
@@ -221,6 +227,7 @@ class SubscriptionController(object):
         else: 
            return self.generateIncorrectRequest()
     
+    ## 
     def __renew_subscription(self):
         if request.method == 'GET':
             try: 
@@ -253,4 +260,32 @@ class SubscriptionController(object):
         else: 
            return self.generateIncorrectRequest()
     
-    
+    def __add_benefit(self):
+        if request.method == 'GET':
+            try: 
+                benefit = self.__benefitfactory.convertToObject(request.form) 
+                benefit_id = self.__benefitdao.add(benefit = benefit)
+                
+                return self.sendResponse({
+                    'message' : 'OK',
+                    'benefit_id' : str(benefit_id),
+                })
+            except Exception as e: 
+                return self.badRequest(e) 
+        else: 
+            return self.generateIncorrectRequest()
+
+    def __get_benefit(self):
+        if request.method == 'GET':
+            try: 
+                benefits = self.__benefitdao.findAll() 
+                
+                return self.sendResponse({
+                    'message' : 'OK',
+                    'benefits' : benefits,
+                })
+            except Exception as e: 
+                return self.badRequest(e) 
+        else: 
+            return self.generateIncorrectRequest()
+

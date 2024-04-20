@@ -3,12 +3,29 @@ import jwt
 from enum import Enum
 from flask import Flask, jsonify, request
 import requests
-
+from functools import wraps
 
 app = Flask(__name__)
 
 BASE_URL_ENTITY = 'http://localhost:5001/'
 BASE_URL_RIDE = 'http://localhost:5002/'
+
+def verify_token(func):
+    @wraps(func)
+    def decorated(*args, **kwargs):
+        data = request.get_json()
+        if 'token' not in data:
+            return jsonify({'message': 'Token is missing!'}), 401
+        token = data['token']
+        verify_data = {'token': token}
+        response = requests.post(BASE_URL_ENTITY + 'verify/token', json=verify_data)
+        if not response.json()['user_id']:
+            return jsonify({'message': 'Invalid token!'}), 401
+        request.user_id = response.json()['user_id']
+        request.user_type = response.json()['user_type']
+        return func(*args, **kwargs)
+
+    return decorated
 
 @app.route('/register/driver', methods=['POST'])
 def register_driver():
@@ -23,6 +40,7 @@ def register_passenger():
     return jsonify(response.json())
 
 @app.route('/driver/add_vehicle', methods=['POST'])
+@verify_token
 def add_vehicle():
     data = request.get_json()
     response = requests.post(BASE_URL_ENTITY + 'driver/add_vehicle', json=data)
@@ -142,5 +160,26 @@ def get_current_ride_passenger(passenger_id):
     response = requests.get(BASE_URL_RIDE + 'passenger/current_ride/' + passenger_id)
     return jsonify(response.json())
 
+@app.route('/passenger/rate_ride', methods=['POST'])
+def rate_ride_passenger():
+    data = request.get_json()
+    response = requests.post(BASE_URL_RIDE + 'passenger/rate_ride', json=data)
+    return jsonify(response.json())
+
+@app.route('/passenger/ride_history/<passenger_id>', methods=['GET'])
+def fetch_ride_history_passenger(passenger_id):
+    response = requests.get(BASE_URL_RIDE + 'passenger/ride_history/' + passenger_id)
+    return jsonify(response.json())
+
+@app.route('/passenger/cancel_ride', methods=['POST'])
+def cancel_ride_passenger():
+    data = request.get_json()
+    response = requests.post(BASE_URL_RIDE + 'passenger/cancel_ride', json=data)
+    return jsonify(response.json())
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({'status': 'pong'})
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5005)
+    app.run(host='0.0.0.0', port=5005,debug=True)
