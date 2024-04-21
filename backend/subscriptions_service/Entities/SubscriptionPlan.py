@@ -64,9 +64,14 @@ class SubscriptionPlan(object):
     def checkExpired(self):
         current_date = date.today()
         
-        expiry_date = self.__start_date + timedelta(days = self.__duration)
+        expiry_date = self.getExpiryDate()
         
         return current_date > expiry_date
+    
+    def getExpiryDate(self):
+        expiry_date = self.__start_date + timedelta(days = self.__duration)
+        
+        return expiry_date
 
     def __str__(self):
         return f'SubscriptionPlan [id={self.__id}, name={self.__name}, price={self.__price}, duration={self.__duration}, benefit={self.__benefit}, date={self.__start_date}]'

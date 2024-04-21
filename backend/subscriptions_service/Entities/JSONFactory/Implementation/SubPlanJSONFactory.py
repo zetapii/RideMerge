@@ -18,6 +18,7 @@ class SubPlanJSONFactory(JSONFactoryInterface):
         self.__json['benefit_id']       = subPlan.getBenefit()
         self.__json['duration']         = subPlan.getDuration() 
         self.__json['start_date']       = subPlan.getStartDate().strftime("%Y-%m-%d %H:%M:%S") 
+        self.__json['expiry_date']      = subPlan.getExpiryDate().strftime("%Y-%m-%d %H:%M:%S")
         return self.__json
 
     def convertToObject(self, json : dict):
