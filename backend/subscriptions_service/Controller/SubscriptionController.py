@@ -76,7 +76,7 @@ class SubscriptionController(object):
         )
 
     def runApp(self, port : int):
-        self.__app.run(debug = True)
+        self.__app.run(host='0.0.0.0',port = 5010 ,debug = True)
     
     # 405 
     def generateIncorrectRequest(self):
@@ -136,12 +136,11 @@ class SubscriptionController(object):
         if request.method == 'GET':
             try: 
               userid = request.form.get("userid") 
-              benefit_id = self.__subdao.remove(userid = userid)  
-              deleted = self.__benefitdao.remove(mongo_id = benefit_id)
+              benefit_id = self.__subdao.remove(userid = userid) 
               
               return self.sendResponse({
                   'message' : 'OK',
-                  'deleted' : deleted,
+                
               })
             except Exception as e: 
                 return self.badRequest(e) 
