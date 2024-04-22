@@ -262,7 +262,9 @@ class SubscriptionController(object):
     def __add_benefit(self):
         if request.method == 'GET':
             try: 
+                print(request.form)
                 benefit = self.__benefitfactory.convertToObject(request.form) 
+                print("got  here")
                 benefit_id = self.__benefitdao.add(benefit = benefit)
                 
                 return self.sendResponse({
@@ -277,6 +279,7 @@ class SubscriptionController(object):
     def __get_benefit(self):
         if request.method == 'GET':
             try: 
+
                 benefits = self.__benefitdao.findAll() 
                 
                 return self.sendResponse({

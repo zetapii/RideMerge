@@ -2,7 +2,7 @@ import sys
 sys.path.append('../../../../rides-services')
 
 from ExternalService.interface.ExternalRideAPI import ExternalRideAPI
-
+from RideService import RideService
 class UberRideAPI(ExternalRideAPI):
 
     rides = [
@@ -17,4 +17,7 @@ class UberRideAPI(ExternalRideAPI):
     def __init__(self, token):
         self.TOKEN = token
     def fetch_rides(self,source,destination):
+        distance = RideService.get_routedistance(source,destination)
+        for ride in self.rides:
+            ride['distance'] = distance
         return self.rides

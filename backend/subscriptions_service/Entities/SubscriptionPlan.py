@@ -58,6 +58,9 @@ class SubscriptionPlan(object):
     def getStartDate(self):
         return self.__start_date
     
+    def getExpireDate(self):
+        return self.__start_date + timedelta(days = self.__duration)
+    
     def setStartDate(self, new_start_date : date):
         self.__start_date = new_start_date 
     

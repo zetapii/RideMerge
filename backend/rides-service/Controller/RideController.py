@@ -179,7 +179,7 @@ def complete_ride():
             invalidate_redis_keys(['passenger_current_ride_' + ride['passenger_id'], 'driver_current_ride_' + ride['driver_id']])
             return jsonify({'status' : 'success'})
         else :
-            return jsonify({'status' : 'failure'})
+            return jsonify({'status' : 'failure','error':'error occured'})
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
     
@@ -256,7 +256,7 @@ def fetch_ride_history_passenger(passenger_id):
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
     
-@app.route('/fetch/external/rides', methods=['GET'])
+@app.route('/fetch/external/rides', methods=['POST'])
 def fetch_external_rides():
     try : 
         source = request.get_json()['source']

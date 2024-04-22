@@ -9,6 +9,7 @@ app = Flask(__name__)
 
 BASE_URL_ENTITY = 'http://localhost:5001/'
 BASE_URL_RIDE = 'http://localhost:5002/'
+BASE_URL_SUBSCRIPTION = 'http://localhost:5010/'
 
 @app.route('/register/driver', methods=['POST'])
 def register_driver():
@@ -174,6 +175,32 @@ def fetch_external_rides():
 @app.route('/ping', methods=['GET'])
 def ping():
     return jsonify({'status': 'pong'})
+
+###SUBSCRIPTION SERVICE STARTS HERE
+@app.route('/add', methods=['GET'])
+def add_subscription():
+    form = request.form
+    response = requests.get(BASE_URL_SUBSCRIPTION + 'add', data=form) 
+    return jsonify(response.json())
+
+@app.route('/find_subscription', methods=['GET'])
+def find_subscription():
+    form = request.form
+    response = requests.get(BASE_URL_SUBSCRIPTION + 'find_subscription', data=form)
+    return jsonify(response.json())
+
+@app.route('/find_subscription_details', methods=['GET'])
+def find_subscription_benefits():
+    form = request.form
+    response = requests.get(BASE_URL_SUBSCRIPTION + 'find_subscription_details', data=form)
+    return jsonify(response.json())
+
+@app.route('/get_benefit', methods=['GET'])
+def get_benefit():
+    response = requests.get(BASE_URL_SUBSCRIPTION + 'get_benefit')
+    return jsonify(response.json())
+
+###SUBSCRIPTION SERVICE ENDS HERE
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005,debug=True)
