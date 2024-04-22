@@ -10,23 +10,6 @@ app = Flask(__name__)
 BASE_URL_ENTITY = 'http://localhost:5001/'
 BASE_URL_RIDE = 'http://localhost:5002/'
 
-def verify_token(func):
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        data = request.get_json()
-        if 'token' not in data:
-            return jsonify({'message': 'Token is missing!'}), 401
-        token = data['token']
-        verify_data = {'token': token}
-        response = requests.post(BASE_URL_ENTITY + 'verify/token', json=verify_data)
-        if not response.json()['user_id']:
-            return jsonify({'message': 'Invalid token!'}), 401
-        request.user_id = response.json()['user_id']
-        request.user_type = response.json()['user_type']
-        return func(*args, **kwargs)
-
-    return decorated
-
 @app.route('/register/driver', methods=['POST'])
 def register_driver():
     data = request.get_json()
@@ -40,7 +23,6 @@ def register_passenger():
     return jsonify(response.json())
 
 @app.route('/driver/add_vehicle', methods=['POST'])
-@verify_token
 def add_vehicle():
     data = request.get_json()
     response = requests.post(BASE_URL_ENTITY + 'driver/add_vehicle', json=data)
@@ -175,6 +157,18 @@ def fetch_ride_history_passenger(passenger_id):
 def cancel_ride_passenger():
     data = request.get_json()
     response = requests.post(BASE_URL_RIDE + 'passenger/cancel_ride', json=data)
+    return jsonify(response.json())
+
+@app.route('/driver/cancel_ride', methods=['POST'])
+def cancel_ride_driver():
+    data = request.get_json()
+    response = requests.post(BASE_URL_RIDE + 'driver/cancel_ride', json=data)
+    return jsonify(response.json())
+
+@app.route('/fetch/external/rides', methods=['POST'])
+def fetch_external_rides():
+    data = request.get_json()
+    response = requests.post(BASE_URL_RIDE + 'fetch/external/rides', json=data)
     return jsonify(response.json())
 
 @app.route('/ping', methods=['GET'])

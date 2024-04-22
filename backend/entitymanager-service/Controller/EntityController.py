@@ -6,8 +6,8 @@ import jwt
 from enum import Enum
 from flask import Flask, jsonify, request
 import requests
-from DAO import EntityDAO
 from DAO import UserDAO
+from DAO import VehicleDAO
 from DAO import DriverAdapter
 from Entities import Driver
 from Entities import Passenger
@@ -90,7 +90,7 @@ def register_passenger():
 def add_vehicle():
     try : 
         data = request.get_json()
-        vehicle_id = EntityDAO.EntityDAO.add_vehicle(data['driver_id'], data['vehicle_model'], data['registration_number'], data['insurance_number'], data.get('manufacturer'), data.get('manufacturing_year'))
+        vehicle_id = VehicleDAO.VehicleDAO.add_vehicle(data['driver_id'], data['vehicle_model'], data['registration_number'], data['insurance_number'], data.get('manufacturer'), data.get('manufacturing_year'))
         if not vehicle_id:
             return jsonify({'vehicle_id' : None})
         return jsonify({'vehicle_id' : vehicle_id})
@@ -173,7 +173,7 @@ def fetch_vehicle(id):
         vehicles = fetch_from_redis('vehicle_' + id)
         if vehicles:
             return vehicles
-        vehicles = EntityDAO.EntityDAO.get_vehicle(id)
+        vehicles = VehicleDAO.VehicleDAO.get_vehicle(id)
         if vehicles:
             cache_in_redis('vehicle_' + id, vehicles)
             return json.loads(json.dumps(vehicles, cls=AlchemyEncoder))
@@ -209,7 +209,7 @@ def fetch_all_drivers():
 @app.route('/fetch/vehicles', methods=['GET'])
 def fetch_all_vehicles():
     try :
-        vehicles = EntityDAO.EntityDAO.get_vehicles()
+        vehicles = VehicleDAO.VehicleDAO.get_vehicles()
         if vehicles:
             return json.loads(json.dumps(vehicles, cls=AlchemyEncoder))
         else:

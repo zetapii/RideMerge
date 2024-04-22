@@ -16,7 +16,7 @@ from Entities import Vehicle
 from services import EntityService
 
 # Create an engine to connect to the SQLite database
-engine = create_engine('sqlite:///users_service.db', echo=True)
+engine = create_engine('sqlite:///entity_service.db', echo=True)
 
 # Create a base class for declarative class definitions
 Base = base.Base
