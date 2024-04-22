@@ -8,11 +8,10 @@ from email.mime.text import MIMEText
 
 
 def send_email(receiver, message):
-    # Email configuration
     sender_email = "pranjali.bishnoi@gmail.com"
     sender_password = "knpjlvpdlyjlwlkd"
     smtp_server = "smtp.gmail.com"
-    smtp_port = 587  # Change this if necessary
+    smtp_port = 587 
 
     # Constructing the email
     msg = MIMEMultipart()
