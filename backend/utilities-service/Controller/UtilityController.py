@@ -8,12 +8,16 @@ import requests
 from enum import IntEnum
 from publishers import EmailPublisher,SMSPublisher
 
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 app = Flask(__name__)
 
 @app.route('/notify_admin/error', methods=['POST'])
 def notify_admin_error():
     try:
-        # body = request.get_json()
+        body = request.get_json()
         email_publisher = EmailPublisher.EmailPublisher()
         sms_publisher = SMSPublisher.SMSPublisher()
 
