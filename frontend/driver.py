@@ -98,10 +98,7 @@ def my_vehicles_window(driver_id):
             # TODO
             response = send_request(f'fetch/driver_vehicles/{driver_id}',
                                     'GET')
-            # response = send_request(f'fetch/vehicles', 'GET')
-            if 'error' in response:
-                sg.popup(response['error'])
-            else:
+            if response:
                 vehicles = response
                 vehicle_data = {}
                 for i, vehicle in enumerate(vehicles):
@@ -120,6 +117,11 @@ def my_vehicles_window(driver_id):
                 ])
         elif event == 'Update Status':
             status = 'OFFLINE' if values['OFFLINE'] else 'WAITING'
+
+            if not window['vehicles'].GetIndexes():
+                sg.popup('Please select a vehicle to update status')
+                continue
+
             # get selected vehicle
             selected_index = window['vehicles'].GetIndexes()[0]
             selected_vehicle = vehicle_data[selected_index]
@@ -185,6 +187,11 @@ def rides_available_window(driver_id):
             response = send_request('driver/accept_ride', 'POST', data)
             if response['status'] == 'success':
                 sg.popup('Ride accepted successfully!')
+                switch_window(
+                    window, lambda: ride_status_window(
+                        selected_ride['ride_id'], selected_ride[
+                            'start_location'], selected_ride['drop_location'],
+                        None, None))
             else:
                 sg.popup('Ride acceptance failed. Please try again.')
 
@@ -193,6 +200,16 @@ def rides_available_window(driver_id):
 
 # Driver Dashboard
 def driver_dashboard(driver_id):
+    # check if a ride exists
+    response = send_request(f'driver/current_ride/{driver_id}', 'GET')
+
+    # NOTE: if we get 'ride_id' field, it means we have an existing ride
+    if response['ride_id']:
+        # TODO: fare is not available in the response
+        ride_status_window(response['ride_id'], response['start_location'],
+                           response['drop_location'],
+                           response['vehicle_model'], 100)
+
     layout = [
         [sg.Text(f"Driver ID: {driver_id}")],
         [sg.Button('Rides Available')],
@@ -220,5 +237,126 @@ def driver_dashboard(driver_id):
         elif event == 'Logout':
             clear_session(user_type='driver')
             break
+
+    window.close()
+
+
+# Ride completed window
+def ride_completed_window(ride_id, start_loc, end_loc, vehicle_model, fare):
+    layout = [
+        [sg.Text('Ride Completed!')],
+        [sg.Text(f'Start Location: {start_loc}')],
+        [sg.Text(f'End Location: {end_loc}')],
+        [sg.Text(f'Vehicle Model: {vehicle_model}')],
+        [sg.Text(f'Fare: {fare}')],
+        [sg.Button('Close')],
+    ]
+
+    window = sg.Window('Ride Completed', layout)
+
+    while True:
+        event, values = window.read()
+        if event in (sg.WIN_CLOSED, 'Close'):
+            break
+
+    # TODO: implement payment gateway integration here
+
+    window.close()
+
+
+# Ride Status Window
+def ride_status_window(ride_id, start_loc, end_loc, vehicle_model, fare):
+    layout = [
+        [sg.Text('...', key='status_msg')],
+        [sg.Text(f'Start Location: {start_loc}')],
+        [sg.Text(f'End Location: {end_loc}')],
+        [sg.Text(f'Vehicle Model: {vehicle_model}')],
+        [sg.Text(f'Fare: {fare}')],
+        [sg.Text(f'Passenger:'),
+         sg.Text('-', key='passenger')],
+        [sg.Text(f'Ride ID: {ride_id}')],
+        [sg.Text(f'Ride Status:'),
+         sg.Text('-', key='status')],
+        [
+            LabelInputText('Enter OTP:', key='otp'),
+            sg.Button('Submit', key='otp_submit')
+        ],
+        [
+            sg.Button('Complete Ride'),
+        ],
+        [sg.Button('Refresh'), sg.Button('Cancel Ride')],
+    ]
+
+    window = sg.Window('Book Ride', layout)
+
+    while True:
+        event, values = window.read()
+        if event in (sg.WIN_CLOSED, 'Cancel'):
+            break
+        elif event == 'Refresh':
+            # Fetch ride status from the backend
+            response = send_request(f'ride_details/{ride_id}', 'GET')
+
+            old_status = window['status'].DisplayText
+
+            # update layout
+            status_msgs = {
+                'PENDING': 'Waiting for driver to accept the ride...',
+                'ACCEPTED': 'Driver accepted the ride!',
+                'PASSENGER_PICKED': 'Driver is on the way to pick you up!',
+                'DRIVER_CANCELLED': 'Driver cancelled the ride',
+                'PASSENGER_CANCELLED': 'You cancelled the ride',
+                'COMPLETED': 'Ride completed!',
+            }
+            if old_status != response['status']:
+                sg.popup(status_msgs[response['status']])
+
+            window['status'].update(response['status'])
+            window['passenger'].update(response['passenger_id'])
+            window['status_msg'].update(status_msgs[response['status']])
+
+            if response['status'] == 'PENDING':
+                pass
+            elif response['status'] == 'ACCEPTED':
+                pass
+            elif response['status'] == 'PASSENGER_PICKED':
+                pass
+            elif response['status'] == 'DRIVER_CANCELLED':
+                break
+            elif response['status'] == 'PASSENGER_CANCELLED':
+                break
+            elif response['status'] == 'COMPLETED':
+                switch_window(
+                    window, lambda: ride_completed_window(
+                        ride_id, start_loc, end_loc, vehicle_model, fare))
+                break
+        elif event == 'otp_submit':
+            data = {'ride_id': ride_id, 'otp': values['otp']}
+            response = send_request('driver/pickup_passenger', 'POST', data)
+            if response['status'] == 'success':
+                sg.popup('Passenger picked up successfully!')
+                # disable the OTP field
+                window['otp'].update(disabled=True)
+            else:
+                sg.popup('Passenger pickup failed. Please try again.')
+        elif event == 'Complete Ride':
+            response = send_request('driver/complete_ride', 'POST',
+                                    {'ride_id': ride_id})
+            if response['status'] == 'success':
+                sg.popup('Ride completed successfully!')
+                switch_window(
+                    window, lambda: ride_completed_window(
+                        ride_id, start_loc, end_loc, vehicle_model, fare))
+                break
+            else:
+                sg.popup('Ride completion failed. Please try again.')
+        elif event == 'Cancel Ride':
+            response = send_request(f'passenger/cancel_ride', 'POST',
+                                    {'ride_id': ride_id})
+            if response['status'] == 'success':
+                sg.popup('Ride cancelled successfully!')
+                break
+            else:
+                sg.popup('Ride cancellation failed. Please try again.')
 
     window.close()
