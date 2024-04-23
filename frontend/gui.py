@@ -15,9 +15,11 @@ def LabelInputText(prompt="", *args, **kwargs):
 
 
 # Switch Window Function
-def switch_window(window: sg.Window, new_window_func: callable):
+def switch_window(window, new_window_func: callable):
     # hide
-    window.hide()
+    if window:
+        window.hide()
     new_window_func()
     # show
-    window.un_hide()
+    if window:
+        window.un_hide()
