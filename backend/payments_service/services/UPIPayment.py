@@ -1,4 +1,4 @@
-from interfaces import PaymentInterface
+from interfaces.PaymentInterface import PaymentInterface
 
 class UPIPayment(PaymentInterface):
     def __init__(self, upi_id, pin):
@@ -10,11 +10,11 @@ class UPIPayment(PaymentInterface):
         # Implement logic to check if UPI credentials are valid
         return True
 
-    def pay(self, amount, driver_wallet):
+    def pay(self, amount):
         if not self.check_valid():
             return False
         
-        # Implement logic to deduct amount from UPI balance
+        # Implement lgic to deduct amount from UPI balance
         if self.balance < amount:
             return False
         

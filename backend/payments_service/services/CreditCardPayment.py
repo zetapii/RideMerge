@@ -1,5 +1,5 @@
 
-from interfaces import PaymentInterface
+from interfaces.PaymentInterface import PaymentInterface
 
 class CreditCardPayment(PaymentInterface) : 
     

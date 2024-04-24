@@ -2,7 +2,8 @@ from gui import sg
 from gui import LabelInputText, switch_window
 from api_helper import send_request
 
-subscription_base_url = "http://10.2.131.17:5010"
+# subscription_base_url = "http://10.2.131.17:5010"
+subscription_base_url = "http://10.2.131.17:5005"
 
 
 def payment_window():
@@ -71,18 +72,14 @@ def subscription_window(passenger_id):
                     f"Premium Vehicle: {bool_to_str(plan['premium_vehicle'])}")
             ],
             [sg.Text(f"Safe Ride: {bool_to_str(plan['safe_ride'])}")],
-            [sg.Text(f"Apply Surge: {bool_to_str(plan['apply_surge'])}")],
+            [sg.Text(f"Surge Benefit: {bool_to_str(not plan['apply_surge'])}")],
             [action_button],
         ])
 
-    response = send_request('get_benefit',
-                            'GET',
-                            base_url=subscription_base_url,
-                            format='data')
+    response = send_request('get_benefit', 'GET', format='data')
     plans = response['benefits']
     response = send_request(f'find_subscription',
                             'GET', {'userid': passenger_id},
-                            base_url=subscription_base_url,
                             format='data')
     #  {"message": "Not Found"}
     if response['message'] == 'Not Found':

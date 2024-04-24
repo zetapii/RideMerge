@@ -289,5 +289,24 @@ def pay_with_upi():
     response = requests.post(BASE_URL_PAYMENT + 'upi', json=data)
     return jsonify(response.json())
 
+# PAYMENT SERVICE
+@app.route('/creditcard', methods = ['POST'])
+def pay_with_creditcard():
+    data = request.get_json()
+    response = requests.post(BASE_URL_PAYMENT + 'creditcard', json=data)
+    return jsonify(response.json())
+
+@app.route('/debitcard', methods = ['POST'])
+def pay_with_debitcard():
+    data = request.get_json()
+    response = requests.post(BASE_URL_PAYMENT + 'debitcard', json=data)
+    return jsonify(response.json())
+
+@app.route('/upi', methods = ['POST'])
+def pay_with_upi():
+    data = request.get_json()
+    response = requests.post(BASE_URL_PAYMENT + 'upi', json=data)
+    return jsonify(response.json())
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005,debug=True)

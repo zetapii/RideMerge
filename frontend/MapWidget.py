@@ -6,7 +6,7 @@ import time
 
 class MapWidget:
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, show_controls=True):
         self.name = name
         self.context = staticmaps.Context()
         self.context.set_tile_provider(staticmaps.tile_provider_OSM)
@@ -37,7 +37,7 @@ class MapWidget:
                               button_color=('white', 'lime'))
                 ],
             ])
-        ]
+        ] if show_controls else [self.graph]
         self.dragging = False
         self.curr_point = None
         self.prev_point = None
@@ -160,9 +160,10 @@ class MapWidget:
                 # delta_y = delta_y * 1 / 2**self.zoom
 
                 import numpy as np
-                delta_x = delta_x * np.cos(np.radians(self.location[0])) * 360 / tile_size / 2**self.zoom
+                delta_x = delta_x * np.cos(np.radians(
+                    self.location[0])) * 360 / tile_size / 2**self.zoom
                 delta_y = delta_y * 360 / tile_size / 2**self.zoom
-                
+
                 self.location[0] -= delta_y
                 self.location[1] -= delta_x
                 self.prev_point = self.curr_point
