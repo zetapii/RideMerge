@@ -18,6 +18,9 @@ Team 19
 
 ### Chosen: Asynchronous Event Driven Approach 
 
+### Reason:
+Using asynchronous event driven approach for sending messages and notifications was the best option because of our implementation limitations.
+
 ### Options
 - Asynchronous Event Driven Approach 
 - Synchronous  Event Driven Approach

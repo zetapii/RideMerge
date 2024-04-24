@@ -18,6 +18,9 @@ Team 19
 
 ### Chosen: Python for backend and frontend as well
 
+### Reason:
+Python was chosen for backend as well as frontend because of the simplicity and the experience the team member have in Python is higher. 
+
 ### Options
 - Python for backend and frontend in ReactJS
 - Python for backend and frontend in VanillaJS

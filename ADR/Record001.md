@@ -17,6 +17,8 @@ Team 19
 
 ### Chosen: Microservices 
 
+### Reason: 
+Microservices are easy to build and mantain. Moreover, they are scalable and suitable for a large project. 
 
 ### Options
 - Event Driven Architecture (PUBLISHER/SUBSCRIBER)
