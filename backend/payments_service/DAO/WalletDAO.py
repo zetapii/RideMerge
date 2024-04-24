@@ -31,6 +31,10 @@ class WalletDAO:
         
         return False
     
+    def get_amount(self, driver_id):
+        self.cursor.execute("SELECT balance FROM driver_wallet WHERE driver_id = ?", (driver_id,))
+        return self.cursor.fetchone()
+    
     def create_wallet(self, driver_id):
         self.cursor.execute("INSERT INTO driver_wallet (driver_id, balance, date_created) VALUES (?, ?, ?)", (driver_id, 100, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         self.connection.commit()

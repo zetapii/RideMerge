@@ -157,7 +157,7 @@ def pay_with_creditcard():
     success = credit_card_payment.pay(amount)
     if success:
         save_payment_to_database(payment_details)
-        return jsonify({"success": True})
+        return jsonify({"status": "success"})
     return jsonify({"error": "error"})
 
 @app.route('/debitcard', methods=['POST'])
@@ -179,7 +179,7 @@ def pay_with_debitcard():
     success = debit_card_payment.pay(amount)
     if success:
         save_payment_to_database(payment_details)
-        return jsonify({"success": True})
+        return jsonify({"status": "success"})
     return jsonify({"error": "error"})
 
 @app.route('/upi', methods=['POST'])
@@ -200,7 +200,7 @@ def pay_with_upi():
     success = upi_payment.pay(amount)
     if success:
         save_payment_to_database(payment_details)
-        return jsonify({"success": True})
+        return jsonify({"status": "success"})
     return jsonify({"error": "error"})
 
 def save_payment_to_database(payment_details):
@@ -211,14 +211,77 @@ def save_payment_to_database(payment_details):
     payment_dao = PaymentsDAO(mydb, cursor)
     payment_dao.add_payment_record(payment_details)
 
+@app.route('/hello_world', methods=['GET'])
+def hello_world():
+    return jsonify({"message": "Hello World!"})
+
+@app.route('/user_history/<user_id>', methods=['GET'])
 def get_payment_history(user_id):
-    data = PaymentsDAO.get_payments_of_user(user_id)
-    if data:
-        return jsonify({
-            "success": True,
-            "data": data
+    try:        
+        mydb = sqlite3.connect("payment_management.db")
+        cursor = mydb.cursor()
+        payment_dao = PaymentsDAO(mydb, cursor)
+        data = payment_dao.get_payments_of_user(str(user_id))
+        if data:
+            print(data)
+            return jsonify({
+                "status": "success",
+                "data": data
             })
-    return jsonify({"error": "error"})
+        else:
+            print(data)
+            return jsonify({
+                "status": "success",
+                "message": "No payment history found for the user.",
+                "data": []
+            })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/wallet_history/<driver_id>', methods=['GET'])
+def get_wallet_history(driver_id):
+    try:
+        mydb = sqlite3.connect("payment_management.db")
+        cursor = mydb.cursor()
+        payment_dao = PaymentsDAO(mydb, cursor)
+        data = payment_dao.get_payment_of_wallet(str(driver_id))
+        if data:
+            return jsonify({
+                "status": "success",
+                "data": data
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "No wallet history found for the driver.",
+                "data": []
+            })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+    
+@app.route('/wallet_amount/<driver_id>', methods=['GET'])
+def get_wallet_amount(driver_id):
+    try:
+        history = get_wallet_history(driver_id)
+
+        # for each history, get the amount and add it to the total
+        total_amount = 0
+        for entry in history.data:
+            total_amount += entry
+
+        return jsonify({
+            "status": "success",
+            "data": total_amount
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)})
+    
+# def create_wallet():
+#     mydb = sqlite3.connect("payment_management.db")
+#     cursor = mydb.cursor()
+#     wallet_dao = WalletDAO(mydb, cursor)
+#     wallet_dao.create_wallet("1")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5014, debug=True)

@@ -14,7 +14,7 @@ class UPIPayment(PaymentInterface):
         if not self.check_valid():
             return False
         
-        # Implement logic to deduct amount from UPI balance
+        # Implement lgic to deduct amount from UPI balance
         if self.balance < amount:
             return False
         
