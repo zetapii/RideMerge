@@ -34,10 +34,9 @@ Ride = Ride.Ride
 RideMetadata = RideMetadata.RideMetadata
 
 class DriverStatus(IntEnum):
-    DRIVING = 0
-    WAITING = 1
-    OFFLINE = 2
-
+    DRIVING = 0  # DRIVER IS CURRENTLY DRIVING
+    WAITING = 1  # DRIVER IS WAITING FOR A RIDE
+    OFFLINE = 2  # DRIVER IS OFFLINE 
 class RideStatus(IntEnum):
     PENDING = 1     # NO DRIVER HAS ACCEPTED THE RIDE
     ACCEPTED = 2    # DRIVER HAS ACCEPTED THE RIDE
@@ -45,6 +44,36 @@ class RideStatus(IntEnum):
     DRIVER_CANCELLED = 4  # RIDE HAS BEEN CANCELLED BY DRIVER
     PASSENGER_CANCELLED = 5   # RIDE HAS BEEN CANCELLED BY RIDER
     COMPLETED = 6   # RIDE HAS BEEN COMPLETED
+
+
+def get_address(location):
+    #split comma separated location into tuples
+    location = tuple(map(float, location.split(',')))
+    if location is None:
+        return "Unknown location"
+   # get the address from the location
+    import requests
+    response = requests.get(
+            f"https://nominatim.openstreetmap.org/reverse?format=json&lat={location[0]}&lon={location[1]}"
+    )
+    data = response.json()
+    # print(data)
+    address = data['display_name']
+    return address
+
+import uuid
+import random 
+
+def generate_numeric_otp(length=6):
+    # Generate a random UUID
+    otp_uuid = uuid.uuid4()
+    # Convert UUID to hexadecimal string and take first 'length' characters
+    otp_hex = str(otp_uuid.hex)[:length]
+    # Convert hexadecimal to decimal
+    otp_decimal = str(int(otp_hex, 16))
+    # Pad with zeros to ensure OTP is 'length' digits
+    otp = otp_decimal.zfill(length)
+    return otp
 
 class RideDAO :
     
@@ -104,6 +133,8 @@ class RideDAO :
             vehicle = RideService.RideService.fetch_vehicles_detail(driver_vehicle.vehicle_id)
             driver = RideService.RideService.fetch_driver_details(driver_vehicle.driver_id)
             fare  = RideService.RideService.get_fare(source, destination, vehicle['vehicle_model'],passenger_id)
+            ##tound fare to 2 digits after decimal
+            fare = round(fare,2)
             final_list.append({'driver_name':driver['name'], 'vehicle_id' : driver_vehicle.vehicle_id, 'model' : vehicle['vehicle_model'],'vehicle_number':vehicle['registration_number'],'fare':fare})
         return final_list
 
@@ -116,10 +147,11 @@ class RideDAO :
             return None
         passenger = RideService.RideService.fetch_passenger_details(passenger_id)
         distance,duration = None , None
-        if is_latlan and is_latlan == True : 
-            distance,duration = RideService.RideService.fetch_distance_details(source,destination)
+        # if is_latlan and is_latlan == True : 
+        distance,duration = RideService.RideService.fetch_distance_details(source,destination)
         ride = Ride(ride_id = str(uuid.uuid4()), passenger_id = passenger_id, start_location = source, drop_location = destination)
         fare = RideService.RideService.get_fare(source, destination, vehicle_model,passenger_id)
+        fare = round(fare,2)
         ride_metadata = RideMetadata(id = str(uuid.uuid4()), ride_id = ride.ride_id, ride_status = 1, vehicle_model = vehicle_model ,is_secure = is_secure, passenger_name = passenger.get('name'),ride_fare = fare)
         if distance : 
             ride_metadata.ride_distance = distance
@@ -136,9 +168,7 @@ class RideDAO :
     
     @staticmethod
     def fetch_rides_driver(driver_id) :
-        print("we got here")
         driver_vehicle = session.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id,DriverVehicle.driver_status==int(DriverStatus.WAITING)).first()
-        print("this is driver_vehicle which maybe empty", driver_vehicle)
         if not driver_vehicle:
             return None
         '''
@@ -160,9 +190,14 @@ class RideDAO :
         if not driver_rating: 
             driver_rating=0
         if driver_rating < RideDAO.SAFE_RIDE_RATING or cnt_rides < RideDAO.SAFE_RIDE_NUMRIDES:
-            return session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == RideStatus.PENDING, RideMetadata.is_secure == False, RideMetadata.vehicle_model == driver_vehicle.model).all()
+            return session.query(RideMetadata).join(Ride, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == RideStatus.PENDING, RideMetadata.is_secure == False, RideMetadata.vehicle_model == driver_vehicle.model).all()
         else : 
-            return session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == int(RideStatus.PENDING) , RideMetadata.vehicle_model == driver_vehicle.model).all()
+            ##Just fetch all rides_ id 
+            rides = session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(RideMetadata.ride_status == int(RideStatus.PENDING) , RideMetadata.vehicle_model == driver_vehicle.model).all()
+            final_list = []
+            for ride in rides : 
+                final_list.append(RideDAO.get_ride_details(ride.ride_id))
+            return final_list
 
     @staticmethod
     def accept_ride_driver(ride_id,driver_id) :
@@ -180,7 +215,7 @@ class RideDAO :
             return None
         ride_metadata.ride_status = int(RideStatus.ACCEPTED)
         ride_metadata.vehicle_id = driver_vehicle.vehicle_id
-        ride_metadata.ride_otp = str(uuid.uuid4())
+        ride_metadata.ride_otp = generate_numeric_otp()
 
         driver = RideService.RideService.fetch_driver_details(driver_id)
         ride_metadata.driver_name = driver.get('name')
@@ -213,7 +248,8 @@ class RideDAO :
     def complete_ride(ride_id) : 
         ride = session.query(Ride).filter(Ride.ride_id == ride_id).first()
         ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride_id).first()
-        if (not ride_metadata) or int(RideStatus.PASSENGER_PICKED):
+        print(ride_metadata.ride_status)
+        if (not ride_metadata) or ride_metadata.ride_status != int(RideStatus.PASSENGER_PICKED):
             return None
         ride_metadata.ride_status = int(RideStatus.COMPLETED)
         session.commit()
@@ -256,8 +292,8 @@ class RideDAO :
                 'ride_id': ride.ride_id,
                 'driver_id': ride.driver_id,
                 'passenger_id': ride.passenger_id,
-                'start_location': ride.start_location,
-                'drop_location': ride.drop_location,
+                'start_location': (ride.start_location),
+                'drop_location': (ride.drop_location),
                 'status': RideStatus(ride_metadata.ride_status).name,
                 'vehicle_id': ride_metadata.vehicle_id,
                 'vehicle_model': ride_metadata.vehicle_model,
@@ -265,7 +301,9 @@ class RideDAO :
                 'is_secure': ride_metadata.is_secure,
                 'fare': ride_metadata.ride_fare,
                 'distance': ride_metadata.ride_distance,
-                'ETR': ride_metadata.ride_ETR}
+                'ETR': ride_metadata.ride_ETR,
+                'start_address': get_address(ride.start_location),
+                'drop_address': get_address(ride.drop_location)}
     
     @staticmethod
     def get_current_ride_driver(driver_id):
@@ -279,15 +317,17 @@ class RideDAO :
                 'ride_id': ride.ride_id, 
                 'driver_id': ride.driver_id, 
                 'passenger_id': ride.passenger_id, 
-                'start_location': ride.start_location, 
-                'drop_location': ride.drop_location, 
+                'start_location': (ride.start_location), 
+                'drop_location': (ride.drop_location), 
                 'status': RideStatus(ride_metadata.ride_status).name, 
                 'vehicle_id': ride_metadata.vehicle_id, 
                 'vehicle_model': ride_metadata.vehicle_model, 
                 'ride_otp': ride_metadata.ride_otp,
                 'ride_fare': ride_metadata.ride_fare,
                 'distance': ride_metadata.ride_distance,
-                'ETR': ride_metadata.ride_ETR}
+                'ETR': ride_metadata.ride_ETR,
+                'start_address': get_address(ride.start_location),
+                'drop_address': get_address(ride.drop_location)}
 
     @staticmethod
     def get_current_ride_passenger(passenger_id):
@@ -301,15 +341,17 @@ class RideDAO :
                 'ride_id': ride.ride_id, 
                 'driver_id': ride.driver_id, 
                 'passenger_id': ride.passenger_id, 
-                'start_location': ride.start_location, 
-                'drop_location': ride.drop_location, 
+                'start_location': (ride.start_location), 
+                'drop_location': (ride.drop_location), 
                 'status': RideStatus(ride_metadata.ride_status).name, 
                 'vehicle_id': ride_metadata.vehicle_id, 
                 'vehicle_model': ride_metadata.vehicle_model, 
                 'ride_otp': ride_metadata.ride_otp,
                 'ride_fare': ride_metadata.ride_fare,
                 'distance': ride_metadata.ride_distance,
-                'ETR': ride_metadata.ride_ETR}
+                'ETR': ride_metadata.ride_ETR,
+                'start_address': get_address(ride.start_location),
+                'drop_address': get_address(ride.drop_location)}
     
     @staticmethod
     def passenger_cancel_ride(ride_id):
@@ -340,12 +382,11 @@ class RideDAO :
     
     @staticmethod
     def ride_history(passenger_id):
-        ##get all past rides for a passenger
         rides = session.query(Ride).join(RideMetadata, Ride.ride_id == RideMetadata.ride_id).filter(Ride.passenger_id == passenger_id, RideMetadata.ride_status == int(RideStatus.COMPLETED)).all()
         final_list = []
         for ride in rides :
             ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride.ride_id).first()
-            final_list.append({'driver_name' :  ride_metadata.driver_name, 'ride_id': ride.ride_id, 'driver_id': ride.driver_id, 'start_location': ride.start_location, 'drop_location': ride.drop_location, 'status': RideStatus(ride_metadata.ride_status).name, 'vehicle_model': ride_metadata.vehicle_model, 'rating': ride_metadata.ride_rating,'fare':ride_metadata.ride_fare})
+            final_list.append({'driver_name' :  ride_metadata.driver_name, 'ride_id': ride.ride_id, 'driver_id': ride.driver_id, 'start_location': (ride.start_location), 'drop_location': (ride.drop_location), 'status': RideStatus(ride_metadata.ride_status).name, 'vehicle_model': ride_metadata.vehicle_model, 'rating': ride_metadata.ride_rating,'fare':ride_metadata.ride_fare,'start_address': get_address(ride.start_location), 'drop_address': get_address(ride.drop_location)})
         return final_list
     
     '''Write methods for car pooling'''

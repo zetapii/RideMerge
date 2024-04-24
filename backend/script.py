@@ -1,10 +1,10 @@
 import requests
 
 
+BASE_URL_ENTITY = "http://127.0.0.1:5001/"
+
 def register():
     
-    ##write code to test above 3 apis 
-    BASE_URL = "http://127.0.0.1:5001/"
     data = {
         'name': 'driver1',
         'password': 'driver1',
@@ -12,7 +12,8 @@ def register():
         'phone' :'7992381519',
         'driving_license': '123456789'
     }
-    response1 = requests.post(BASE_URL + 'register/driver', json=data)
+    response1 = requests.post(BASE_URL_ENTITY + 'register/driver', json=data)
+    driver_id = response1.json().get('driver_id')
     print(response1.json())
     data = {
         'name': 'passenger1',
@@ -20,21 +21,21 @@ def register():
         'email': 'passenger1',
         'phone' :'9198776090',
     }
-    response = requests.post(BASE_URL + 'register/passenger', json=data)
+    response = requests.post(BASE_URL_ENTITY + 'register/passenger', json=data)
     print(response.json())
-
+    passenger_id = response1.json().get('passenger_id')
     data = {
         'driver_id': response1.json()['driver_id'],
         'vehicle_model': 'swift',
-        'registration_number': '123',
-        'insurance_number': '123',
-        'manufacturer': '123',
-        'manufacturing_year': '123'
+        'registration_number': 'HYD12345',
+        'insurance_number': 'MYINSURANCENUMBER',
+        'manufacturer': 'HONDA',
+        'manufacturing_year': '2021'
     }
-    response = requests.post(BASE_URL + 'driver/add_vehicle', json=data)
+    response = requests.post(BASE_URL_ENTITY + 'driver/add_vehicle', json=data)
     print(response.json())
-        
-
+    print(driver_id," ",passenger_id)
+    return response.json().get('driver_id') 
 
 def main():
     ##just fetch the driver vehicles from this 
@@ -58,7 +59,20 @@ def main():
     response = requests.post(BASE_URL + 'driver/driver_vehicle', json=data)
     print(response.json())
 
+
+def test_monitoring():
+    for i in range(100):
+        data = {
+            'password': 'driver1',
+            'email': 'driver1',
+            'phone' :'7992381519',
+            'driving_license': '123456789'
+        }
+        response = requests.post(BASE_URL_ENTITY + 'register/driver', json=data)
+    return 
+
 if __name__ == '__main__':
-    register()
+    test_monitoring()
+    # driver_id,passenger_id =register()
     # main()
 

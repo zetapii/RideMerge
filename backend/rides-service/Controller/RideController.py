@@ -18,7 +18,7 @@ app = Flask(__name__)
 import redis
 # Connect to Redis
 redis_host = 'localhost'
-redis_port = 6379
+redis_port = 6380
 redis_db = 0
 redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
 
@@ -125,9 +125,7 @@ def book_ride():
 def fetch_rides_driver(driver_id):
     try : 
         rides = RideDAO.RideDAO.fetch_rides_driver(driver_id)
-        if not rides:
-            return jsonify([])
-        return json.loads(json.dumps(rides, cls=AlchemyEncoder))
+        return rides
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
 
@@ -135,8 +133,6 @@ def fetch_rides_driver(driver_id):
 def get_ride_details(id):
     try : 
         ride_details = RideDAO.RideDAO.get_ride_details(id)
-        ##also get ETA by first getting duration of trip and then subtracting from the time when ride is booked
-        ##start time of the ride is the time when the ride is booked
         if not ride_details:
             return jsonify({'ride_details':None})
         return json.loads(json.dumps(ride_details, cls=AlchemyEncoder))
@@ -170,6 +166,7 @@ def pickup_passenger():
             return jsonify({'status' : 'failure'})
     except Exception as e:
         return jsonify({'error':'error occured' , 'debug':str(e)})
+    
 @app.route('/driver/complete_ride', methods=['POST']) 
 def complete_ride():
     try : 
