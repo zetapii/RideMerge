@@ -49,6 +49,7 @@ def main_menu(user_type):
             driver_dashboard(session['user_id'])
         elif session['user_type'] == 'passenger':
             passenger_dashboard(session['user_id'])
+        return
 
     user_type_human = user_type.capitalize()
 

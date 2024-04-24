@@ -1,5 +1,6 @@
 import requests
 import json
+from collections import defaultdict
 
 # BASE_URL = 'http://0.0.0.0:5001'
 BASE_URL = 'http://10.2.131.17:5005'
@@ -7,7 +8,11 @@ user_session = None
 
 
 # Helper function to send requests to the backend
-def send_request(endpoint, method='GET', data=None, base_url=None):
+def send_request(endpoint,
+                 method='GET',
+                 data=None,
+                 base_url=None,
+                 format='json'):
     if user_session:
         if data:
             data['token'] = user_session['token']
@@ -17,21 +22,37 @@ def send_request(endpoint, method='GET', data=None, base_url=None):
 
     url = f"{base_url}/{endpoint}"
     headers = {'Content-Type': 'application/json'}
-    if method == 'GET':
-        response = requests.get(url)
-    elif method == 'POST':
-        response = requests.post(url, json=data, headers=headers)
 
     # debug log
     print(f"Request: {url}")
     print(f"Method: {method}")
     print(f"Data: {data}")
+
+    if method == 'GET':
+        if format == 'data':
+            response = requests.get(url, data=data)
+        else:
+            response = requests.get(url)
+    elif method == 'POST':
+        if format == 'json':
+            response = requests.post(url, json=data, headers=headers)
+        else:
+            response = requests.post(url, data=data, headers=headers)
+
+    # debug log
     print(f"Response: {response.text}")
 
     try:
-        return response.json()
-    except:
-        return {'error': 'Server error'}
+        # ensure KeyError is not raised
+        if type(response.json()) == list:
+            return response.json()
+        # return defaultdict(lambda: None, response.json())
+        # convert to defaultdict recursively
+        return json.loads(json.dumps(response.json()), object_hook=lambda d: defaultdict(lambda: None, d))
+    except Exception as e:
+        error_json = {'error': 'Server error', 'debug': str(e)}
+        print(error_json)
+        return error_json
 
 
 # Change BASE_URL
