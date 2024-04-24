@@ -1,7 +1,8 @@
 from gui import sg
 from gui import LabelInputText, switch_window
 from api_helper import send_request, clear_session
-
+from payment import payment_history_window,wallet_window
+import textwrap
 
 # Driver Registration Window
 def register_driver_window():
@@ -112,7 +113,7 @@ def my_vehicles_window(driver_id):
                         'registration_number': vehicle['registration_number'],
                     }
                 window['vehicles'].update([
-                    f"Vehicle: {vehicle['model']} | Status: {vehicle['status']} | Location: {vehicle['current_location']}"
+                    f"Model: {vehicle['model']} | Status: {vehicle['status']} | Location: {vehicle['current_location']}"
                     for vehicle in vehicles
                 ])
         elif event == 'Update Status':
@@ -165,12 +166,14 @@ def rides_available_window(driver_id):
                 for i, ride in enumerate(rides):
                     ride_data[i] = {
                         'ride_id': ride['ride_id'],
-                        'passenger_id': ride['passenger_id'],
+                        'passenger_name': ride['passenger_name'],
                         'start_location': ride['start_location'],
                         'drop_location': ride['drop_location'],
+                        'start_address': ride['start_address'],
+                        'drop_address': ride['drop_address'],
                     }
                 window['rides'].update([
-                    f"Passenger: {ride['passenger_id']} | Start: {ride['start_location']} | Drop: {ride['drop_location']}"
+                    f"Passenger: {ride['passenger_name']} | Start: {ride['start_address']} | Drop: {ride['drop_address']}"
                     for ride in rides
                 ])
         elif event == 'Accept':
@@ -191,12 +194,12 @@ def rides_available_window(driver_id):
                     window, lambda: ride_status_window(
                         selected_ride['ride_id'], selected_ride[
                             'start_location'], selected_ride['drop_location'],
-                        None, None))
+                        selected_ride['start_address'], selected_ride[
+                            'drop_address'], None, None))
             else:
                 sg.popup('Ride acceptance failed. Please try again.')
 
     window.close()
-
 
 # Driver Dashboard
 def driver_dashboard(driver_id):
@@ -208,10 +211,15 @@ def driver_dashboard(driver_id):
         # TODO: fare is not available in the response
         ride_status_window(response['ride_id'], response['start_location'],
                            response['drop_location'],
+                           response['start_address'], response['drop_address'],
                            response['vehicle_model'], 100)
 
+    # fetch driver name
+    response = send_request(f'fetch/driver/{driver_id}', 'GET')
+    driver_name = response['name']
+
     layout = [
-        [sg.Text(f"Driver ID: {driver_id}")],
+        [sg.Text(f"Driver Name: {driver_name}")],
         [sg.Button('Rides Available')],
         [sg.Button('Add Vehicle')],
         [sg.Button('My Vehicles')],
@@ -232,8 +240,7 @@ def driver_dashboard(driver_id):
         elif event == 'Rides Available':
             switch_window(window, lambda: rides_available_window(driver_id))
         elif event == 'Wallet':
-            # TODO: Implement wallet feature
-            sg.popup('Wallet feature is not available yet.')
+            switch_window(window, lambda: wallet_window(driver_id))
         elif event == 'Logout':
             clear_session(user_type='driver')
             break
@@ -259,19 +266,23 @@ def ride_completed_window(ride_id, start_loc, end_loc, vehicle_model, fare):
         if event in (sg.WIN_CLOSED, 'Close'):
             break
 
-    # TODO: implement payment gateway integration here
-
     window.close()
 
 
 # Ride Status Window
-def ride_status_window(ride_id, start_loc, end_loc, vehicle_model, fare):
+def ride_status_window(ride_id, start_loc, end_loc, start_address, end_address,
+                       vehicle_model, fare):
+
+    # wrap address
+    start_address = textwrap.fill(start_address, width=50)
+    end_address = textwrap.fill(end_address, width=50)
+
     layout = [
         [sg.Text('...', key='status_msg')],
-        [sg.Text(f'Start Location: {start_loc}')],
-        [sg.Text(f'End Location: {end_loc}')],
+        [sg.Text(f'Start Location: {start_address}')],
+        [sg.Text(f'End Location: {end_address}')],
         [sg.Text(f'Vehicle Model: {vehicle_model}')],
-        [sg.Text(f'Fare: {fare}')],
+        [sg.Text(f'Fare: {fare}', key='fare_label')],
         [sg.Text(f'Passenger:'),
          sg.Text('-', key='passenger')],
         [sg.Text(f'Ride ID: {ride_id}')],
@@ -287,13 +298,13 @@ def ride_status_window(ride_id, start_loc, end_loc, vehicle_model, fare):
         [sg.Button('Refresh'), sg.Button('Cancel Ride')],
     ]
 
-    window = sg.Window('Book Ride', layout)
+    window = sg.Window('Book Ride', layout, finalize=True)
 
     while True:
-        event, values = window.read()
+        event, values = window.read(timeout=5000)
         if event in (sg.WIN_CLOSED, 'Cancel'):
             break
-        elif event == 'Refresh':
+        elif event in ('Refresh', sg.TIMEOUT_EVENT):
             # Fetch ride status from the backend
             response = send_request(f'ride_details/{ride_id}', 'GET')
 
@@ -312,8 +323,9 @@ def ride_status_window(ride_id, start_loc, end_loc, vehicle_model, fare):
                 sg.popup(status_msgs[response['status']])
 
             window['status'].update(response['status'])
-            window['passenger'].update(response['passenger_id'])
+            window['passenger'].update(response['passenger_name'])
             window['status_msg'].update(status_msgs[response['status']])
+            window['fare_label'].update(f'Fare: {response["fare"]}')
 
             if response['status'] == 'PENDING':
                 pass
@@ -328,7 +340,7 @@ def ride_status_window(ride_id, start_loc, end_loc, vehicle_model, fare):
             elif response['status'] == 'COMPLETED':
                 switch_window(
                     window, lambda: ride_completed_window(
-                        ride_id, start_loc, end_loc, vehicle_model, fare))
+                        ride_id, start_address, end_address, vehicle_model, fare))
                 break
         elif event == 'otp_submit':
             data = {'ride_id': ride_id, 'otp': values['otp']}

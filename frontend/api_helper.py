@@ -1,6 +1,7 @@
 import requests
 import json
 from collections import defaultdict
+from gui import sg
 
 # BASE_URL = 'http://0.0.0.0:5001'
 BASE_URL = 'http://10.2.131.17:5005'
@@ -28,21 +29,21 @@ def send_request(endpoint,
     print(f"Method: {method}")
     print(f"Data: {data}")
 
-    if method == 'GET':
-        if format == 'data':
-            response = requests.get(url, data=data)
-        else:
-            response = requests.get(url)
-    elif method == 'POST':
-        if format == 'json':
-            response = requests.post(url, json=data, headers=headers)
-        else:
-            response = requests.post(url, data=data, headers=headers)
-
-    # debug log
-    print(f"Response: {response.text}")
-
     try:
+        if method == 'GET':
+            if format == 'data':
+                response = requests.get(url, data=data)
+            else:
+                response = requests.get(url)
+        elif method == 'POST':
+            if format == 'json':
+                response = requests.post(url, json=data, headers=headers)
+            else:
+                response = requests.post(url, data=data, headers=headers)
+
+        # debug log
+        print(f"Response: {response.text}")
+
         # ensure KeyError is not raised
         if type(response.json()) == list:
             return response.json()
@@ -52,7 +53,7 @@ def send_request(endpoint,
     except Exception as e:
         error_json = {'error': 'Server error', 'debug': str(e)}
         print(error_json)
-        return error_json
+        return defaultdict(lambda: None, error_json)
 
 
 # Change BASE_URL
