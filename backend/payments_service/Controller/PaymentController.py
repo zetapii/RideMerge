@@ -1,5 +1,6 @@
 import sys
 import os
+import sqlite3
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../payments_service"))
 sys.path.append(parent_dir)
@@ -127,8 +128,12 @@ sys.path.append(parent_dir)
 
 from flask import Flask, jsonify, request
 import datetime
-from DAO import PaymentsDAO, WalletDAO
-from services import CreditCardPayment, DebitCardPayment, UPIPayment
+from DAO.PaymentsDAO import PaymentsDAO
+from DAO.WalletDAO import WalletDAO
+# from services import CreditCardPayment, DebitCardPayment, UPIPayment
+from services.CreditCardPayment import CreditCardPayment
+from services.DebitCardPayment import DebitCardPayment
+from services.UPIPayment import UPIPayment
 
 app = Flask(__name__)
 
@@ -199,10 +204,12 @@ def pay_with_upi():
     return jsonify({"error": "error"})
 
 def save_payment_to_database(payment_details):
-    driver_wallet_dao = WalletDAO()
+    mydb = sqlite3.connect("payment_management.db")
+    cursor = mydb.cursor()
+    driver_wallet_dao = WalletDAO(mydb, cursor)
     driver_wallet_dao.add_amount(payment_details)
-    payments_dao = PaymentsDAO()
-    payments_dao.add_payment_record(payment_details)
+    payment_dao = PaymentsDAO(mydb, cursor)
+    payment_dao.add_payment_record(payment_details)
 
 def get_payment_history(user_id):
     data = PaymentsDAO.get_payments_of_user(user_id)

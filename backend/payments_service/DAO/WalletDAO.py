@@ -17,25 +17,25 @@ mydb.commit()
 
 
 class WalletDAO:
-    def __init__(self):
-        pass
+    def __init__(self, connection, cursor):
+        self.connection = connection
+        self.cursor = cursor
 
     def add_amount(self, payment_details):
-        
-        cursor.execute("UPDATE driver_wallet SET balance = balance + ? WHERE driver_id = ?", (payment_details['amount'], payment_details['driver_id']) )
-        mydb.commit()
+        self.cursor.execute("UPDATE driver_wallet SET balance = balance + ? WHERE driver_id = ?", (payment_details['amount'], payment_details['driver_id']) )
+        self.connection.commit()
 
         # Number of inserted records should be one
-        if cursor.rowcount == 1:
+        if self.cursor.rowcount == 1:
             return True
         
         return False
     
     def create_wallet(self, driver_id):
-        cursor.execute("INSERT INTO driver_wallet (driver_id, balance, date_created) VALUES (?, ?, ?)", (driver_id, 100, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        mydb.commit()
+        self.cursor.execute("INSERT INTO driver_wallet (driver_id, balance, date_created) VALUES (?, ?, ?)", (driver_id, 100, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        self.connection.commit()
 
-wallet = WalletDAO()
+# wallet = WalletDAO()
 # wallet.create_wallet("1")
 # wallet.add_amount({
 #     "driver_id": "1",

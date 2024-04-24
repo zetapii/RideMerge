@@ -10,7 +10,7 @@ class UPIPayment(PaymentInterface):
         # Implement logic to check if UPI credentials are valid
         return True
 
-    def pay(self, amount, driver_wallet):
+    def pay(self, amount):
         if not self.check_valid():
             return False
         

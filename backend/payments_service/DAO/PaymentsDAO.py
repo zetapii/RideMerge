@@ -21,35 +21,27 @@ mydb.commit()
 
 
 class PaymentsDAO:
-    def __init__(self):
+    def __init__(self, connection, cursor):
+        self.connection = connection
         self.id = 1
+        self.cursor = cursor
 
     def get_payments_of_user(self, user_id):
-        cursor.execute("SELECT * FROM payment WHERE user_id = ?", 
-                       (user_id))
-        
-        return cursor.fetchall()
+        self.cursor.execute("SELECT * FROM payment WHERE user_id = ?", (user_id,))
+        return self.cursor.fetchall()
 
     def get_payment_by_id(self, id):
-        cursor.execute("SELECT * FROM payment WHERE id = ?",
-                       (id))
-
-        return cursor.fetchone()
-        pass
+        self.cursor.execute("SELECT * FROM payment WHERE id = ?", (id,))
+        return self.cursor.fetchone()
 
     def add_payment_record(self, payment_details):
-        print(type(payment_details))
-
         values = (self.id,) + tuple(payment_details.values())
-        
-        cursor.execute("INSERT INTO payment (id, user_id, ride_id, driver_id, amount, payment_method, date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                       values)
-        
+        self.cursor.execute("INSERT INTO payment (id, user_id, ride_id, driver_id, amount, payment_method, date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
         self.id += 1
-        mydb.commit()
+        self.connection.commit()
 
         # Number of inserted records should be one
-        if cursor.rowcount == 1:
+        if self.cursor.rowcount == 1:
             return True
         
         return False
@@ -57,7 +49,7 @@ class PaymentsDAO:
     def update_payment_record(self, payment_details):
         pass
 
-payment = PaymentsDAO()
+# payment = PaymentsDAO()
 
 # payment.add_payment_record({
 #     "user_id": 1,
@@ -69,4 +61,4 @@ payment = PaymentsDAO()
 #     "status": "successful"
 # })
 
-print(payment.get_payment_by_id("1"))
+# print(payment.get_payment_by_id("1"))
