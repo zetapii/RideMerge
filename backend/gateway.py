@@ -10,6 +10,7 @@ app = Flask(__name__)
 BASE_URL_ENTITY = 'http://localhost:5001/'
 BASE_URL_RIDE = 'http://localhost:5002/'
 BASE_URL_SUBSCRIPTION = 'http://localhost:5010/'
+BASE_URL_PAYMENT = "http://localhost:5003/"
 
 @app.route('/register/driver', methods=['POST'])
 def register_driver():
@@ -201,6 +202,25 @@ def get_benefit():
     return jsonify(response.json())
 
 ###SUBSCRIPTION SERVICE ENDS HERE
+
+# PAYMENT SERVICE
+@app.route('/creditcard', methods = ['POST'])
+def pay_with_creditcard():
+    data = request.get_json()
+    response = requests.post(BASE_URL_PAYMENT + 'creditcard', json=data)
+    return jsonify(response.json())
+
+@app.route('/debitcard', methods = ['POST'])
+def pay_with_debitcard():
+    data = request.get_json()
+    response = requests.post(BASE_URL_PAYMENT + 'debitcard', json=data)
+    return jsonify(response.json())
+
+@app.route('/upi', methods = ['POST'])
+def pay_with_upi():
+    data = request.get_json()
+    response = requests.post(BASE_URL_PAYMENT + 'upi', json=data)
+    return jsonify(response.json())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005,debug=True)

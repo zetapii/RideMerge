@@ -1,4 +1,4 @@
-from interfaces import PaymentInterface
+from interfaces.PaymentInterface import PaymentInterface
 
 class DebitCardPayment(PaymentInterface):
     def __init__(self, card_number, expiration_date, cvv):

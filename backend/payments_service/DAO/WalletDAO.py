@@ -1,0 +1,43 @@
+'''Accessing the Wallet Object in the Database'''
+import datetime
+import sqlite3
+mydb = sqlite3.connect("payment_management.db")
+ 
+cursor = mydb.cursor()
+
+# Create wallet table
+cursor.execute('''CREATE TABLE IF NOT EXISTS driver_wallet (
+    driver_id varchar(255),
+    balance int,
+    date_created varchar(255)
+)''')
+
+# Commit changes
+mydb.commit()
+
+
+class WalletDAO:
+    def __init__(self):
+        pass
+
+    def add_amount(self, payment_details):
+        
+        cursor.execute("UPDATE driver_wallet SET balance = balance + ? WHERE driver_id = ?", (payment_details['amount'], payment_details['driver_id']) )
+        mydb.commit()
+
+        # Number of inserted records should be one
+        if cursor.rowcount == 1:
+            return True
+        
+        return False
+    
+    def create_wallet(self, driver_id):
+        cursor.execute("INSERT INTO driver_wallet (driver_id, balance, date_created) VALUES (?, ?, ?)", (driver_id, 100, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        mydb.commit()
+
+wallet = WalletDAO()
+# wallet.create_wallet("1")
+# wallet.add_amount({
+#     "driver_id": "1",
+#     "amount": 100
+# })

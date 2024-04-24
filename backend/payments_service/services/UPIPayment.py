@@ -1,4 +1,4 @@
-from interfaces import PaymentInterface
+from interfaces.PaymentInterface import PaymentInterface
 
 class UPIPayment(PaymentInterface):
     def __init__(self, upi_id, pin):
