@@ -12,7 +12,6 @@ from Entities import Passenger
 from Entities import Vehicle
 
 from services import EntityService
-
 # Create an engine to connect to the SQLite database
 engine = create_engine('sqlite:///entity_service.db', echo=True)
 

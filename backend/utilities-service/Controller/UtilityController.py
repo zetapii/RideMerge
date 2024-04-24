@@ -8,16 +8,12 @@ import requests
 from enum import IntEnum
 from publishers import EmailPublisher,SMSPublisher
 
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
 app = Flask(__name__)
 
 @app.route('/notify_admin/error', methods=['POST'])
 def notify_admin_error():
     try:
-        body = request.get_json()
+        # body = request.get_json()
         email_publisher = EmailPublisher.EmailPublisher()
         sms_publisher = SMSPublisher.SMSPublisher()
 
@@ -44,5 +40,13 @@ def notify_user_ride_status():
     except Exception as e:
         return jsonify({'status': 'error in publishing', 'error': str(e)}), 500
     
+##write api to find the distance between two locations
+@app.route('/fetch/distance', methods=['POST'])
+def fetch_distance():
+    try:
+        body = request.get_json()
+        source = body.get('source')
+        destination = body.get('destination')
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5008, debug=True)

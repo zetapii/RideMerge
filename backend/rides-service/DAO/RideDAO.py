@@ -111,7 +111,6 @@ class RideDAO :
     def book_ride(passenger_id, source , destination , is_secure , vehicle_model , is_latlan) : 
         '''Match a ride with the given parameters'''
         '''Ride Entity is created here'''
-
         current_ride = RideDAO.get_current_ride_passenger(passenger_id)
         if current_ride :
             return None
@@ -132,6 +131,7 @@ class RideDAO :
         session.add(ride)
         session.add(ride_metadata)
         session.commit()
+        print("this is ride ",ride)
         return ride.ride_id
     
     @staticmethod
@@ -213,7 +213,7 @@ class RideDAO :
     def complete_ride(ride_id) : 
         ride = session.query(Ride).filter(Ride.ride_id == ride_id).first()
         ride_metadata = session.query(RideMetadata).filter(RideMetadata.ride_id == ride_id).first()
-        if not ride_metadata:
+        if (not ride_metadata) or int(RideStatus.PASSENGER_PICKED):
             return None
         ride_metadata.ride_status = int(RideStatus.COMPLETED)
         session.commit()

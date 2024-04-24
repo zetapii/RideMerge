@@ -30,6 +30,6 @@ class EmailPublisher:
             'receiver': 'zaidcoder@gmail.com'
         }
         json_data = json.dumps(data)
-
+        
         channel.basic_publish(exchange='', routing_key='EmailTopic', body=json_data,properties=pika.BasicProperties(delivery_mode=2))
         connection.close()
